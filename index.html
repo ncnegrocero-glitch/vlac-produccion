@@ -1002,7 +1002,7 @@ async function notionAPI(method, endpoint, body) {
 async function loadMuebles() {
   showLoading('Sincronizando muebles...');
   let muebles = [];
-  let body = { page_size: 100, sorts: [{ property: 'Nombre', direction: 'ascending' }] };
+  let body = { page_size: 100 };
 
   while (true) {
     const res = await notionAPI('POST', `/databases/${MUEBLES_DB_ID}/query`, body);
@@ -1010,8 +1010,15 @@ async function loadMuebles() {
 
     for (const p of res.results) {
       const props = p.properties || {};
-      const nombre = props['Nombre']?.title?.[0]?.plain_text || '';
-      if (!nombre) continue;
+      // El campo título puede tener cualquier nombre — buscamos el tipo "title"
+      let nombre = '';
+      for (const key of Object.keys(props)) {
+        if (props[key].type === 'title') {
+          nombre = props[key].title?.[0]?.plain_text || '';
+          break;
+        }
+      }
+      if (!nombre || nombre === 'Mueble - plantilla Base') continue;
 
       const obraRel = props['Obra']?.relation?.[0];
       let obraName = '—';
