@@ -983,12 +983,10 @@ function saveState() {
 // ══════════════════════════════════════════
 async function notionAPI(method, endpoint, body) {
   try {
-    const res = await fetch(`https://corsproxy.io/?https://api.notion.com/v1${endpoint}`, {
+    const res = await fetch(`/notion${endpoint}`, {
       method,
       headers: {
-        'Authorization': `Bearer ${NOTION_TOKEN}`,
         'Content-Type': 'application/json',
-        'Notion-Version': NOTION_VERSION,
       },
       body: body ? JSON.stringify(body) : undefined
     });
