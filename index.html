@@ -4,1531 +4,538 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>VLAC · Producción</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 
   :root {
-    --bg: #0a0a0a;
-    --bg2: #141414;
-    --bg3: #1e1e1e;
-    --bg4: #282828;
-    --border: #2a2a2a;
-    --accent: #f5a623;
-    --accent-dim: rgba(245,166,35,0.12);
-    --green: #22c55e;
-    --green-dim: rgba(34,197,94,0.12);
-    --red: #ef4444;
-    --red-dim: rgba(239,68,68,0.12);
-    --blue: #3b82f6;
-    --blue-dim: rgba(59,130,246,0.12);
-    --yellow: #eab308;
-    --text: #f0f0f0;
-    --text2: #a0a0a0;
-    --muted: #505050;
+    --bg: #0a0a0a; --bg2: #141414; --bg3: #1e1e1e; --bg4: #282828;
+    --border: #2a2a2a; --accent: #f5a623; --accent-dim: rgba(245,166,35,0.12);
+    --green: #22c55e; --green-dim: rgba(34,197,94,0.12);
+    --red: #ef4444; --red-dim: rgba(239,68,68,0.12);
+    --yellow: #eab308; --yellow-dim: rgba(234,179,8,0.12);
+    --text: #f0f0f0; --text2: #a0a0a0; --muted: #505050;
     --font-display: 'Bebas Neue', sans-serif;
     --font-mono: 'IBM Plex Mono', monospace;
     --font-sans: 'IBM Plex Sans', sans-serif;
     --radius: 8px;
   }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { background:var(--bg); color:var(--text); font-family:var(--font-sans); min-height:100vh; overflow-x:hidden; }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-sans);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+  .header { background:var(--bg2); border-bottom:1px solid var(--border); padding:0 20px; height:52px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:200; }
+  .logo { font-family:var(--font-display); font-size:24px; letter-spacing:4px; color:var(--accent); }
+  .logo span { color:var(--text2); font-size:12px; letter-spacing:1px; margin-left:8px; font-family:var(--font-mono); }
+  .header-right { display:flex; align-items:center; gap:10px; }
+  .header-clock { font-family:var(--font-mono); font-size:11px; color:var(--muted); }
+  .btn-sm { background:none; border:1px solid var(--border); color:var(--muted); font-family:var(--font-mono); font-size:10px; padding:5px 10px; border-radius:5px; cursor:pointer; transition:all 0.15s; }
+  .btn-sm:hover { border-color:var(--accent); color:var(--accent); }
 
-  /* ── HEADER ── */
-  .header {
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    padding: 0 20px;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 200;
-  }
-  .logo {
-    font-family: var(--font-display);
-    font-size: 26px;
-    letter-spacing: 4px;
-    color: var(--accent);
-    line-height: 1;
-  }
-  .logo span { color: var(--text2); font-size: 14px; letter-spacing: 1px; margin-left: 8px; font-family: var(--font-mono); }
-  .header-clock {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--muted);
-  }
+  .tabs { background:var(--bg2); border-bottom:1px solid var(--border); display:flex; padding:0 20px; }
+  .tab { font-family:var(--font-mono); font-size:10px; font-weight:600; letter-spacing:1px; padding:11px 16px; border:none; background:none; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.15s; text-transform:uppercase; }
+  .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
 
-  /* ── NAV TABS ── */
-  .tabs {
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    padding: 0 20px;
-    gap: 0;
-  }
-  .tab {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    padding: 12px 20px;
-    border: none;
-    background: none;
-    color: var(--muted);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.15s;
-    text-transform: uppercase;
-  }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-  .tab:hover:not(.active) { color: var(--text2); }
+  .view { display:none; } .view.active { display:block; }
+  .wrap { max-width:520px; margin:0 auto; padding:24px 16px 60px; }
+  .section-label { font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:10px; }
 
-  /* ── VIEWS ── */
-  .view { display: none; }
-  .view.active { display: block; }
+  /* ROL */
+  .rol-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:28px; }
+  .rol-btn { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:16px 12px; cursor:pointer; transition:all 0.15s; text-align:left; }
+  .rol-btn:hover { border-color:var(--accent); }
+  .rol-btn.active { background:var(--accent-dim); border-color:var(--accent); }
+  .rol-btn-icon { font-size:22px; margin-bottom:6px; }
+  .rol-btn-name { font-family:var(--font-display); font-size:18px; letter-spacing:1px; color:var(--text); }
+  .rol-btn-fases { font-family:var(--font-mono); font-size:10px; color:var(--muted); margin-top:2px; }
 
-  /* ── OPERARIO VIEW ── */
-  .operario-wrap {
-    max-width: 520px;
-    margin: 0 auto;
-    padding: 24px 16px 40px;
-  }
+  /* MUEBLE LIST */
+  .mueble-list { display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+  .mueble-item { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; cursor:pointer; transition:all 0.15s; display:flex; justify-content:space-between; align-items:center; }
+  .mueble-item:hover { border-color:var(--accent); }
+  .mueble-item-left { flex:1; }
+  .mueble-item-nombre { font-family:var(--font-display); font-size:18px; letter-spacing:0.5px; margin-bottom:3px; }
+  .mueble-item-meta { font-size:12px; color:var(--text2); }
+  .mueble-item-fase { font-family:var(--font-mono); font-size:10px; padding:3px 8px; border-radius:4px; background:var(--accent-dim); color:var(--accent); white-space:nowrap; margin-left:10px; }
+  .mueble-item.has-warning { border-left:3px solid var(--red); }
+  .warning-preview { font-size:11px; color:var(--red); margin-top:4px; }
 
-  .section-label {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 10px;
-  }
+  /* DETALLE */
+  .detalle-header { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:16px; }
+  .detalle-top { background:var(--bg3); padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:flex-start; }
+  .detalle-nombre { font-family:var(--font-display); font-size:26px; letter-spacing:1px; flex:1; }
+  .detalle-fase { font-family:var(--font-mono); font-size:10px; padding:4px 10px; border-radius:4px; background:var(--accent-dim); color:var(--accent); }
+  .detalle-meta { padding:12px 20px; display:flex; gap:20px; }
+  .meta-item { display:flex; flex-direction:column; gap:2px; }
+  .meta-key { font-size:10px; color:var(--muted); font-family:var(--font-mono); letter-spacing:1px; }
+  .meta-val { font-size:13px; color:var(--text2); font-weight:500; }
 
-  /* Selector de operario */
-  .operario-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-bottom: 24px;
-  }
-  .op-btn {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    color: var(--text2);
-    font-family: var(--font-sans);
-    font-size: 13px;
-    font-weight: 500;
-    padding: 10px 8px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: center;
-  }
-  .op-btn:hover { border-color: var(--accent); color: var(--text); }
-  .op-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  /* CHECKLIST */
+  .checklist-section { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:16px; }
+  .checklist-header { background:var(--bg3); padding:12px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+  .checklist-title { font-family:var(--font-mono); font-size:11px; letter-spacing:1px; color:var(--text2); text-transform:uppercase; }
+  .checklist-prog-text { font-family:var(--font-mono); font-size:11px; color:var(--muted); }
+  .prog-bar-wrap { height:3px; background:var(--bg4); }
+  .prog-bar { height:100%; background:var(--green); transition:width 0.3s; }
+  .checklist-row { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:10px; }
+  .checklist-row:last-child { border-bottom:none; }
+  .check-text { flex:1; font-size:14px; color:var(--text2); line-height:1.4; padding-top:4px; }
+  .check-text.ok-state { color:var(--text); }
+  .check-text.noapl-state { color:var(--muted); text-decoration:line-through; }
+  .check-text.prob-state { color:var(--red); }
+  .check-btns { display:flex; gap:5px; flex-shrink:0; }
+  .check-btn { width:34px; height:34px; border-radius:6px; border:1px solid var(--border); background:var(--bg4); cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
+  .check-btn:hover { transform:scale(1.1); }
+  .check-btn.sel-ok { background:var(--green-dim); border-color:var(--green); }
+  .check-btn.sel-noapl { background:var(--bg3); border-color:var(--muted); }
+  .check-btn.sel-prob { background:var(--red-dim); border-color:var(--red); }
 
-  /* Card del mueble activo */
-  .mueble-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 20px;
-  }
-  .mueble-card-header {
-    background: var(--bg3);
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  .mueble-nombre {
-    font-family: var(--font-display);
-    font-size: 22px;
-    letter-spacing: 1px;
-    line-height: 1.1;
-    flex: 1;
-  }
-  .fase-badge {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 4px;
-    background: var(--accent-dim);
-    color: var(--accent);
-    white-space: nowrap;
-    letter-spacing: 0.5px;
-  }
-  .mueble-meta {
-    padding: 12px 20px;
-    display: flex;
-    gap: 20px;
-    border-bottom: 1px solid var(--border);
-  }
-  .meta-item { display: flex; flex-direction: column; gap: 2px; }
-  .meta-key { font-size: 10px; color: var(--muted); font-family: var(--font-mono); letter-spacing: 1px; }
-  .meta-val { font-size: 13px; color: var(--text2); font-weight: 500; }
+  /* TIMER */
+  .timer-card { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:16px; }
+  .timer-display { font-family:var(--font-mono); font-size:48px; font-weight:600; letter-spacing:4px; text-align:center; padding:20px; line-height:1; color:var(--muted); }
+  .timer-display.running { color:var(--green); }
+  .timer-display.paused { color:var(--yellow); }
+  .timer-estado { text-align:center; font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--muted); padding-bottom:16px; text-transform:uppercase; }
 
-  /* Timer */
-  .timer-area {
-    padding: 20px;
-    text-align: center;
-    border-bottom: 1px solid var(--border);
-  }
-  .timer-display {
-    font-family: var(--font-mono);
-    font-size: 42px;
-    font-weight: 600;
-    letter-spacing: 4px;
-    color: var(--text);
-    line-height: 1;
-    margin-bottom: 6px;
-  }
-  .timer-display.running { color: var(--green); }
-  .timer-display.paused { color: var(--yellow); }
-  .timer-estado {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
+  /* BOTONES */
+  .acciones { display:flex; gap:10px; margin-bottom:16px; }
+  .btn { flex:1; padding:14px 10px; border:none; border-radius:var(--radius); font-family:var(--font-sans); font-size:14px; font-weight:600; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .btn:disabled { opacity:0.3; cursor:not-allowed; }
+  .btn-green { background:var(--green); color:#000; }
+  .btn-green:hover:not(:disabled) { background:#16a34a; }
+  .btn-yellow { background:var(--bg4); border:1px solid var(--yellow); color:var(--yellow); }
+  .btn-yellow:hover:not(:disabled) { background:var(--yellow-dim); }
+  .btn-orange { background:var(--accent); color:#000; }
+  .btn-orange:hover:not(:disabled) { background:#d4891e; }
 
-  /* Botones de acción */
-  .acciones {
-    padding: 16px 20px;
-    display: flex;
-    gap: 10px;
-  }
-  .btn {
-    flex: 1;
-    padding: 14px 10px;
-    border: none;
-    border-radius: var(--radius);
-    font-family: var(--font-sans);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-  }
-  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
-  .btn-iniciar { background: var(--green); color: #000; }
-  .btn-iniciar:hover:not(:disabled) { background: #16a34a; }
-  .btn-pausar { background: var(--bg4); border: 1px solid var(--yellow); color: var(--yellow); }
-  .btn-pausar:hover:not(:disabled) { background: rgba(234,179,8,0.1); }
-  .btn-finalizar { background: var(--accent); color: #000; }
-  .btn-finalizar:hover:not(:disabled) { background: #d4891e; }
-  .btn-danger { background: var(--red-dim); border: 1px solid var(--red); color: var(--red); }
+  /* COMENTARIO */
+  .comentario-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:16px; }
+  .comentario-label { font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; margin-bottom:8px; }
+  .comentario-input { width:100%; background:var(--bg3); border:1px solid var(--border); color:var(--text); font-family:var(--font-sans); font-size:14px; padding:10px 12px; border-radius:var(--radius); resize:none; min-height:72px; outline:none; transition:border-color 0.15s; }
+  .comentario-input:focus { border-color:var(--accent); }
+  .comentario-input::placeholder { color:var(--muted); }
 
-  /* Selector de mueble */
-  .select-wrap { margin-bottom: 20px; }
-  .field-select {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: var(--font-sans);
-    font-size: 14px;
-    padding: 12px 16px;
-    border-radius: var(--radius);
-    appearance: none;
-    cursor: pointer;
-    outline: none;
-  }
-  .field-select:focus { border-color: var(--accent); }
+  .warning-card { background:var(--red-dim); border:1px solid var(--red); border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:13px; color:var(--red); display:flex; gap:8px; line-height:1.4; }
 
-  /* ── CHECKLIST MODAL ── */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.85);
-    z-index: 300;
-    align-items: flex-end;
-    justify-content: center;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 16px 16px 0 0;
-    width: 100%;
-    max-width: 520px;
-    max-height: 90vh;
-    overflow-y: auto;
-    padding: 24px 20px 40px;
-    animation: slideUp 0.25s ease;
-  }
-  @keyframes slideUp {
-    from { transform: translateY(60px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
-  .modal-title {
-    font-family: var(--font-display);
-    font-size: 24px;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
-  }
-  .modal-subtitle {
-    font-size: 12px;
-    color: var(--muted);
-    font-family: var(--font-mono);
-    margin-bottom: 20px;
-  }
-  .checklist-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-  }
-  .checklist-item:last-of-type { border-bottom: none; }
-  .check-box {
-    width: 22px;
-    height: 22px;
-    border: 2px solid var(--muted);
-    border-radius: 4px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s;
-    margin-top: 1px;
-  }
-  .checklist-item.checked .check-box {
-    background: var(--green);
-    border-color: var(--green);
-  }
-  .checklist-item.checked .check-box::after {
-    content: '✓';
-    color: #000;
-    font-size: 13px;
-    font-weight: 700;
-  }
-  .checklist-item.checked .check-text {
-    color: var(--muted);
-    text-decoration: line-through;
-  }
-  .check-text { font-size: 14px; line-height: 1.4; color: var(--text2); flex: 1; }
+  .volver-btn { display:flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:11px; color:var(--muted); cursor:pointer; margin-bottom:20px; background:none; border:none; padding:0; transition:color 0.15s; }
+  .volver-btn:hover { color:var(--accent); }
 
-  .checklist-progress {
-    background: var(--bg3);
-    border-radius: 6px;
-    padding: 12px 16px;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .progress-bar-wrap {
-    flex: 1;
-    height: 6px;
-    background: var(--bg4);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-  .progress-bar {
-    height: 100%;
-    background: var(--green);
-    border-radius: 3px;
-    transition: width 0.3s ease;
-  }
-  .progress-text {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--muted);
-    white-space: nowrap;
-  }
+  /* KANBAN */
+  .kanban-wrap { padding:16px; overflow-x:auto; }
+  .kanban-board { display:flex; gap:10px; min-width:max-content; align-items:flex-start; }
+  .kanban-col { background:var(--bg2); border:1px solid var(--border); border-radius:10px; width:185px; flex-shrink:0; overflow:hidden; }
+  .kanban-col-header { padding:10px 12px; border-bottom:1px solid var(--border); background:var(--bg3); }
+  .kanban-col-title { font-family:var(--font-mono); font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--text2); margin-bottom:2px; }
+  .kanban-col-count { font-family:var(--font-display); font-size:20px; color:var(--accent); line-height:1; }
+  .kanban-cards { padding:8px; display:flex; flex-direction:column; gap:6px; min-height:40px; }
+  .kanban-card { background:var(--bg3); border:1px solid var(--border); border-radius:6px; padding:8px 10px; font-size:12px; font-weight:500; }
+  .kanban-card-obra { font-size:10px; color:var(--muted); margin-top:2px; font-family:var(--font-mono); }
+  .kanban-card.has-warning { border-left:3px solid var(--red); }
 
-  /* Comentario */
-  .comentario-wrap { margin-top: 16px; }
-  .comentario-label {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 1.5px;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-  .comentario-input {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: var(--font-sans);
-    font-size: 14px;
-    padding: 12px 14px;
-    border-radius: var(--radius);
-    resize: none;
-    min-height: 80px;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  .comentario-input:focus { border-color: var(--accent); }
-  .comentario-input::placeholder { color: var(--muted); }
+  /* ADMIN */
+  .admin-wrap { max-width:860px; margin:0 auto; padding:20px; }
+  .admin-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:10px; margin-bottom:28px; }
+  .admin-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:14px; }
+  .admin-card-op { font-family:var(--font-mono); font-size:10px; letter-spacing:1px; color:var(--muted); text-transform:uppercase; margin-bottom:6px; }
+  .admin-card-mueble { font-family:var(--font-display); font-size:17px; margin-bottom:3px; }
+  .admin-card-fase { font-size:12px; color:var(--text2); margin-bottom:8px; }
+  .admin-card-timer { font-family:var(--font-mono); font-size:22px; font-weight:600; color:var(--green); }
+  .admin-card-timer.paused { color:var(--yellow); }
+  .status-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--green); margin-right:6px; animation:pulse 2s infinite; }
+  .status-dot.paused { background:var(--yellow); animation:none; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .hist-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .hist-table th { text-align:left; font-family:var(--font-mono); font-size:10px; letter-spacing:1px; color:var(--muted); text-transform:uppercase; padding:10px 12px; border-bottom:1px solid var(--border); background:var(--bg2); }
+  .hist-table td { padding:10px 12px; border-bottom:1px solid var(--border); color:var(--text2); vertical-align:top; }
 
-  .modal-actions { margin-top: 20px; display: flex; gap: 10px; }
+  .toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(16px); background:var(--bg3); border:1px solid var(--border); color:var(--text); font-family:var(--font-mono); font-size:12px; padding:10px 18px; border-radius:8px; z-index:500; opacity:0; transition:all 0.25s; white-space:nowrap; pointer-events:none; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast.ok { border-color:var(--green); color:var(--green); }
+  .toast.error { border-color:var(--red); color:var(--red); }
 
-  /* Advertencia en card */
-  .advertencia-tag {
-    margin: 0 20px 12px;
-    background: var(--red-dim);
-    border: 1px solid var(--red);
-    border-radius: 6px;
-    padding: 10px 14px;
-    font-size: 13px;
-    color: var(--red);
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-  }
-  .advertencia-tag span { flex: 1; line-height: 1.4; }
-
-  /* ── ADMIN VIEW ── */
-  .admin-wrap {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 24px 20px 40px;
-  }
-  .admin-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 12px;
-    margin-bottom: 32px;
-  }
-  .admin-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-  }
-  .admin-card-op {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 1px;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-  .admin-card-mueble {
-    font-family: var(--font-display);
-    font-size: 18px;
-    letter-spacing: 0.5px;
-    margin-bottom: 4px;
-  }
-  .admin-card-fase {
-    font-size: 12px;
-    color: var(--text2);
-    margin-bottom: 10px;
-  }
-  .admin-card-timer {
-    font-family: var(--font-mono);
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--green);
-  }
-  .admin-card-timer.paused { color: var(--yellow); }
-  .status-dot {
-    display: inline-block;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--green);
-    margin-right: 6px;
-    animation: pulse 2s infinite;
-  }
-  .status-dot.paused { background: var(--yellow); animation: none; }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-
-  /* Historial */
-  .hist-title {
-    font-family: var(--font-display);
-    font-size: 20px;
-    letter-spacing: 1px;
-    margin-bottom: 16px;
-  }
-  .hist-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-  .hist-table th {
-    text-align: left;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 1px;
-    color: var(--muted);
-    text-transform: uppercase;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg2);
-  }
-  .hist-table td {
-    padding: 11px 12px;
-    border-bottom: 1px solid var(--border);
-    color: var(--text2);
-    vertical-align: top;
-  }
-  .hist-table tr:hover td { background: var(--bg2); }
-  .hist-comment { font-size: 11px; color: var(--muted); margin-top: 3px; font-style: italic; }
-
-  /* ── KANBAN VIEW ── */
-  .kanban-wrap {
-    padding: 20px;
-    overflow-x: auto;
-  }
-  .kanban-board {
-    display: flex;
-    gap: 12px;
-    min-width: max-content;
-    align-items: flex-start;
-  }
-  .kanban-col {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    width: 200px;
-    flex-shrink: 0;
-    overflow: hidden;
-  }
-  .kanban-col-header {
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg3);
-  }
-  .kanban-col-title {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--text2);
-    margin-bottom: 2px;
-  }
-  .kanban-col-count {
-    font-family: var(--font-display);
-    font-size: 22px;
-    color: var(--accent);
-    line-height: 1;
-  }
-  .kanban-cards { padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 60px; }
-  .kanban-card {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 10px 12px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-    line-height: 1.3;
-  }
-  .kanban-card-obra { font-size: 10px; color: var(--muted); margin-top: 3px; font-family: var(--font-mono); }
-  .kanban-card.has-warning { border-left: 3px solid var(--red); }
-
-  /* ── MENSAJE TOAST ── */
-  .toast {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: var(--font-mono);
-    font-size: 13px;
-    padding: 12px 20px;
-    border-radius: 8px;
-    z-index: 500;
-    opacity: 0;
-    transition: all 0.25s;
-    white-space: nowrap;
-    pointer-events: none;
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  .toast.ok { border-color: var(--green); color: var(--green); }
-  .toast.error { border-color: var(--red); color: var(--red); }
-
-  /* ── LOADING ── */
-  .loading-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    z-index: 400;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .loading-overlay.show { display: flex; }
-  .spinner {
-    width: 36px; height: 36px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-text { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: 1px; }
-
-  .empty-state {
-    text-align: center;
-    padding: 48px 20px;
-    color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    letter-spacing: 1px;
-  }
-  .empty-state-icon { font-size: 32px; margin-bottom: 12px; }
-
-  .refresh-btn {
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    padding: 6px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-  .header-right { display: flex; align-items: center; gap: 12px; }
+  .loading-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:400; align-items:center; justify-content:center; flex-direction:column; gap:14px; }
+  .loading-overlay.show { display:flex; }
+  .spinner { width:34px; height:34px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .loading-text { font-family:var(--font-mono); font-size:11px; color:var(--muted); letter-spacing:1px; }
+  .empty-state { text-align:center; padding:40px 20px; color:var(--muted); font-family:var(--font-mono); font-size:11px; letter-spacing:1px; }
+  .empty-state-icon { font-size:28px; margin-bottom:10px; }
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <div class="header">
   <div class="logo">VLAC <span>PRODUCCIÓN</span></div>
   <div class="header-right">
-    <button class="refresh-btn" onclick="recargarMuebles()">↻ Sync</button>
+    <button class="btn-sm" onclick="recargarMuebles()">↻ Sync</button>
     <div class="header-clock" id="clock">--:--:--</div>
   </div>
 </div>
 
-<!-- TABS -->
 <div class="tabs">
-  <button class="tab active" onclick="showView('operario')">Operario</button>
-  <button class="tab" onclick="showView('kanban')">Panel</button>
-  <button class="tab" onclick="showView('admin')">Admin</button>
+  <button class="tab active" onclick="showTab('operario',this)">Operario</button>
+  <button class="tab" onclick="showTab('kanban',this)">Panel</button>
+  <button class="tab" onclick="showTab('admin',this)">Admin</button>
 </div>
 
-<!-- ══════════════════════════════════════ -->
-<!-- VISTA OPERARIO -->
-<!-- ══════════════════════════════════════ -->
+<!-- OPERARIO -->
 <div class="view active" id="view-operario">
-  <div class="operario-wrap">
+  <div class="wrap">
 
-    <!-- Selector operario -->
-    <div class="section-label">¿Quién sos?</div>
-    <div class="operario-grid" id="operarioGrid"></div>
-
-    <!-- Sin operario seleccionado -->
-    <div id="sinOperario" class="empty-state">
-      <div class="empty-state-icon">👆</div>
-      Seleccioná tu nombre para ver tu cola
+    <div id="paso-rol">
+      <div class="section-label">¿Con qué rol entrás?</div>
+      <div class="rol-grid" id="rolGrid"></div>
     </div>
 
-    <!-- Panel operario activo -->
-    <div id="panelOperario" style="display:none">
+    <div id="paso-muebles" style="display:none">
+      <button class="volver-btn" onclick="volverARol()">← Cambiar rol</button>
+      <div class="section-label" id="muebles-label">Muebles disponibles</div>
+      <div class="mueble-list" id="muebleList"></div>
+    </div>
 
-      <!-- Si tiene tarea activa -->
-      <div id="panelTareaActiva" style="display:none">
-        <div class="section-label">Trabajando en</div>
-        <div class="mueble-card" id="cardActivo">
-          <div class="mueble-card-header">
-            <div class="mueble-nombre" id="activoNombre">—</div>
-            <div class="fase-badge" id="activoFase">—</div>
-          </div>
-          <div class="mueble-meta">
-            <div class="meta-item">
-              <span class="meta-key">Obra</span>
-              <span class="meta-val" id="activoObra">—</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-key">Prioridad</span>
-              <span class="meta-val" id="activoPrioridad">—</span>
-            </div>
-          </div>
-          <div id="advertenciaWrap" style="display:none">
-            <div class="advertencia-tag">
-              ⚠️ <span id="advertenciaTexto"></span>
-            </div>
-          </div>
-          <div class="timer-area">
-            <div class="timer-display" id="timerDisplay">00:00:00</div>
-            <div class="timer-estado" id="timerEstado">EN CURSO</div>
-          </div>
-          <div class="acciones">
-            <button class="btn btn-pausar" id="btnPausar" onclick="accion('pausar')">⏸ Pausar</button>
-            <button class="btn btn-finalizar" onclick="abrirChecklist()">✓ Finalizar</button>
-          </div>
+    <div id="paso-detalle" style="display:none">
+      <button class="volver-btn" onclick="volverAMuebles()">← Volver a la lista</button>
+
+      <div class="detalle-header">
+        <div class="detalle-top">
+          <div class="detalle-nombre" id="det-nombre">—</div>
+          <div class="detalle-fase" id="det-fase">—</div>
+        </div>
+        <div class="detalle-meta">
+          <div class="meta-item"><span class="meta-key">Obra</span><span class="meta-val" id="det-obra">—</span></div>
+          <div class="meta-item"><span class="meta-key">Prioridad</span><span class="meta-val" id="det-prioridad">—</span></div>
+          <div class="meta-item"><span class="meta-key">Laqueado</span><span class="meta-val" id="det-laqueado">—</span></div>
         </div>
       </div>
 
-      <!-- Si no tiene tarea activa -->
-      <div id="panelSinTarea">
-        <div class="section-label">Seleccioná un mueble</div>
-        <div class="select-wrap">
-          <select class="field-select" id="muebleSelect">
-            <option value="">— Elegí un mueble —</option>
-          </select>
+      <div id="det-warning" class="warning-card" style="display:none">⚠️ <span id="det-warning-text"></span></div>
+
+      <div class="checklist-section" id="checklist-section">
+        <div class="checklist-header">
+          <div class="checklist-title">Verificación previa</div>
+          <div class="checklist-prog-text" id="check-prog-text">0 / 0</div>
         </div>
-        <div id="muebleInfo" style="display:none; margin-bottom:16px;">
-          <div class="mueble-card">
-            <div class="mueble-card-header">
-              <div class="mueble-nombre" id="infoNombre">—</div>
-              <div class="fase-badge" id="infoFase">—</div>
-            </div>
-            <div class="mueble-meta">
-              <div class="meta-item">
-                <span class="meta-key">Obra</span>
-                <span class="meta-val" id="infoObra">—</span>
-              </div>
-              <div class="meta-item">
-                <span class="meta-key">Prioridad</span>
-                <span class="meta-val" id="infoPrioridad">—</span>
-              </div>
-            </div>
-            <div id="infoAdvertenciaWrap" style="display:none; padding: 0 20px 12px;">
-              <div class="advertencia-tag">
-                ⚠️ <span id="infoAdvertenciaTexto"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <button class="btn btn-iniciar" onclick="accion('iniciar')" style="width:100%; margin-bottom:10px">▶ Iniciar fase</button>
+        <div class="prog-bar-wrap"><div class="prog-bar" id="check-prog-bar" style="width:0%"></div></div>
+        <div id="checklist-items"></div>
       </div>
 
+      <div class="comentario-wrap">
+        <div class="comentario-label">Comentario / Advertencia para la siguiente fase</div>
+        <textarea class="comentario-input" id="comentario-input" placeholder="Ej: Panel B tiene marca en el canto, revisar antes de laquear..."></textarea>
+      </div>
+
+      <div class="timer-card" id="timer-card" style="display:none">
+        <div class="timer-display" id="timer-display">00:00:00</div>
+        <div class="timer-estado" id="timer-estado">LISTO</div>
+      </div>
+
+      <div class="acciones" id="acciones-pre">
+        <button class="btn btn-green" onclick="iniciarFase()">▶ Iniciar fase</button>
+      </div>
+      <div class="acciones" id="acciones-activo" style="display:none">
+        <button class="btn btn-yellow" id="btn-pausar" onclick="pausarReanudar()">⏸ Pausar</button>
+        <button class="btn btn-orange" onclick="finalizarFase()">✓ Finalizar fase</button>
+      </div>
     </div>
+
   </div>
 </div>
 
-<!-- ══════════════════════════════════════ -->
-<!-- VISTA KANBAN -->
-<!-- ══════════════════════════════════════ -->
+<!-- KANBAN -->
 <div class="view" id="view-kanban">
-  <div class="kanban-wrap">
-    <div class="kanban-board" id="kanbanBoard"></div>
-  </div>
+  <div class="kanban-wrap"><div class="kanban-board" id="kanbanBoard"></div></div>
 </div>
 
-<!-- ══════════════════════════════════════ -->
-<!-- VISTA ADMIN -->
-<!-- ══════════════════════════════════════ -->
+<!-- ADMIN -->
 <div class="view" id="view-admin">
   <div class="admin-wrap">
-    <div class="section-label" style="margin-bottom:14px">Activo ahora</div>
-    <div class="admin-grid" id="adminGrid">
-      <div class="empty-state"><div class="empty-state-icon">😴</div>Nadie trabajando</div>
-    </div>
-    <div class="hist-title">Historial del día</div>
+    <div class="section-label" style="margin-bottom:12px">Activo ahora</div>
+    <div class="admin-grid" id="adminGrid"><div class="empty-state"><div class="empty-state-icon">😴</div>Nadie trabajando</div></div>
+    <div style="font-family:var(--font-display);font-size:20px;letter-spacing:1px;margin-bottom:14px">Historial del día</div>
     <div style="overflow-x:auto">
       <table class="hist-table">
-        <thead>
-          <tr>
-            <th>Operario</th>
-            <th>Mueble</th>
-            <th>Fase</th>
-            <th>Duración</th>
-            <th>Comentario</th>
-          </tr>
-        </thead>
-        <tbody id="historialBody">
-          <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">Sin registros hoy</td></tr>
-        </tbody>
+        <thead><tr><th>Rol</th><th>Mueble</th><th>Fase</th><th>Duración</th><th>Problemas</th><th>Comentario</th></tr></thead>
+        <tbody id="historialBody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Sin registros hoy</td></tr></tbody>
       </table>
     </div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════ -->
-<!-- MODAL CHECKLIST -->
-<!-- ══════════════════════════════════════ -->
-<div class="modal-overlay" id="modalChecklist">
-  <div class="modal">
-    <div class="modal-title" id="checklistTitle">Checklist</div>
-    <div class="modal-subtitle" id="checklistSubtitle">Confirmá que completaste todos los pasos</div>
-
-    <div class="checklist-progress">
-      <div class="progress-bar-wrap">
-        <div class="progress-bar" id="progressBar" style="width:0%"></div>
-      </div>
-      <div class="progress-text" id="progressText">0 / 0</div>
-    </div>
-
-    <div id="checklistItems"></div>
-
-    <div class="comentario-wrap">
-      <div class="comentario-label">Comentario / Advertencia (opcional)</div>
-      <textarea class="comentario-input" id="comentarioInput" placeholder="Ej: Pieza B requiere retoque de filo, quedan marcas en panel superior..."></textarea>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn btn-danger" onclick="cerrarChecklist()" style="flex:0.5">Cancelar</button>
-      <button class="btn btn-finalizar" id="btnConfirmarFase" onclick="confirmarFase()">Aprobar y avanzar fase →</button>
-    </div>
-  </div>
-</div>
-
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
-
-<!-- LOADING -->
-<div class="loading-overlay" id="loading">
-  <div class="spinner"></div>
-  <div class="loading-text" id="loadingText">CARGANDO...</div>
-</div>
+<div class="loading-overlay" id="loading"><div class="spinner"></div><div class="loading-text" id="loading-text">CARGANDO...</div></div>
 
 <script>
-// ══════════════════════════════════════════
-// CONFIGURACIÓN
-// ══════════════════════════════════════════
-const NOTION_TOKEN = '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';
 const MUEBLES_DB_ID = '3175a392e02d807f9967ed48823fe831';
-const NOTION_VERSION = '2022-06-28';
 
-const OPERARIOS = ['Sebas','Santi','Luis','Juanchi','Miguel V','Pedro','Celeste','Jorge','Miguel L','Thomas','Cristian'];
+const ROLES = [
+  { id:'dt', nombre:'Dept. Técnico', icon:'📐', fases:['F0 – Carpeta Drive','F1 – Preparación DT','F2 – Replanteo','F3 – Planos Técnicos','F4 – Nesting'] },
+  { id:'cnc', nombre:'CNC', icon:'🔩', fases:['F5 – CNC'] },
+  { id:'carpinteria', nombre:'Carpintería', icon:'🔨', fases:['F6 – Mesa 1','F8 – Mesa 2'] },
+  { id:'cabina', nombre:'Cabina', icon:'🎨', fases:['F7 – Cabina'] },
+];
 
-// Mapa completo de fases con checklists
-const FASES_CONFIG = {
-  'F0 – Carpeta Drive': {
-    color: '#6b7280',
-    checklist: [
-      'Carpeta principal creada en Drive',
-      'Planos generales subidos',
-      'Renders del cliente subidos',
-      'Texto del presupuesto subido',
-      'Subcarpeta por mueble creada',
-      'Planos/renders por mueble asignados',
-      'Acceso compartido con DT'
-    ],
-    siguiente: (laqueado) => 'F1 – Preparación DT'
-  },
-  'F1 – Preparación DT': {
-    color: '#8b9cf4',
-    checklist: [
-      'Planos impresos',
-      'Carpeta física armada',
-      'Hoja de notas por mueble preparada',
-      'Cámara/teléfono con carga',
-      'Herramientas de medición listas',
-      'Fecha de visita a obra confirmada'
-    ],
-    siguiente: (laqueado) => 'F2 – Replanteo'
-  },
-  'F2 – Replanteo': {
-    color: '#60a5fa',
-    checklist: [
-      'Mediciones tomadas (cinta/laser)',
-      'Fotos subidas a Drive',
-      'Nota: columnas registrada',
-      'Nota: revoque registrada',
-      'Nota: piso (cota) registrada',
-      'Nota: apertura de puertas registrada',
-      'Nota: cañerías/electricidad registrada',
-      'Nota: condiciones especiales registrada',
-      'Notas cargadas en Notion'
-    ],
-    siguiente: (laqueado) => 'F3 – Planos Técnicos'
-  },
-  'F3 – Planos Técnicos': {
-    color: '#3b82f6',
-    checklist: [
-      'Plano dibujado a escala real',
-      '1er envío al cliente realizado',
-      'Respuesta cliente registrada',
-      'Correcciones aplicadas (si aplica)',
-      'Plano APROBADO por cliente',
-      'Aprobación guardada en Drive',
-      'Adecuaciones post-aprobación aplicadas',
-      'Plano final en Drive',
-      'Detalles de materiales al pie COMPLETO'
-    ],
-    siguiente: (laqueado) => 'F4 – Nesting'
-  },
-  'F4 – Nesting': {
-    color: '#1d4ed8',
-    checklist: [
-      'Archivo Nesting generado y guardado en Drive',
-      'Planos de armado generados e impresos',
-      'Lista de materiales generada',
-      'Stock verificado contra lista de materiales',
-      'Etiquetas impresas para todas las piezas',
-      'Carpeta de taller física armada',
-      'Listado herrajes enviado'
-    ],
-    siguiente: (laqueado) => 'F5 – CNC'
-  },
-  'F5 – CNC': {
-    color: '#f97316',
-    checklist: [
-      'Archivo Nesting cargado y verificado en máquina',
-      'Existencia de materiales verificada',
-      'Archivo ejecutado sin errores',
-      'Etiqueta pegada en CADA pieza',
-      'Filos pegados según indicación',
-      'Piezas limpiadas y perfeccionadas',
-      'Piezas agrupadas por mueble e identificadas'
-    ],
-    siguiente: (laqueado) => 'F6 – Mesa 1'
-  },
-  'F6 – Mesa 1': {
-    color: '#eab308',
-    checklist: [
-      'Documentación revisada',
-      'Todas las piezas presentes y etiquetadas',
-      'Barrales cortados a medida (si aplica)',
-      'Ajustes de corte según plano',
-      'Fresado de bordes según indicación',
-      'Pedidos especiales de DT ejecutados',
-      'Piezas listas para siguiente fase'
-    ],
-    siguiente: (laqueado) => laqueado ? 'F7 – Cabina' : 'F8 – Mesa 2'
-  },
-  'F7 – Cabina': {
-    color: '#a855f7',
-    checklist: [
-      'Color/tipo de laca verificado en planos',
-      'Brillo/terminación verificado',
-      'Lijado parejo en todas las piezas',
-      'Fondo aplicado',
-      'Fondo lijado uniformemente',
-      'Terminación final aplicada',
-      'Secado completo',
-      'Sin defectos visuales'
-    ],
-    siguiente: (laqueado) => 'F8 – Mesa 2'
-  },
-  'F8 – Mesa 2': {
-    color: '#ca8a04',
-    checklist: [
-      'Piezas presentes sin daños',
-      'Armado final completo',
-      'Herrajes colocados (bisagras, correderas, tiradores)',
-      'Regulación de bisagras/correderas',
-      'Limpieza interior y exterior',
-      'Control de calidad visual',
-      'Aprobación interna'
-    ],
-    siguiente: (laqueado) => 'F9 – Embalaje'
-  },
-  'F9 – Embalaje': {
-    color: '#22c55e',
-    checklist: [
-      'Embalado con protección adecuada',
-      'Guarnición empaquetada y rotulada',
-      'Pintura para retoques incluida (si DT indica)',
-      'Accesorios adicionales incluidos',
-      'Lista de contenido completa y adjunta',
-      'Comparado con lista de envío total de la obra',
-      'Remito preparado',
-      'Foto del embalaje subida a Drive'
-    ],
-    siguiente: (laqueado) => '✅ Listo para Envío'
-  }
+const FASES = {
+  'F0 – Carpeta Drive': { color:'#6b7280', sig:(l)=>'F1 – Preparación DT', items:['Carpeta principal creada en Drive','Planos generales subidos','Renders del cliente subidos','Texto del presupuesto subido','Subcarpeta por mueble creada','Planos/renders por mueble asignados','Acceso compartido con DT'] },
+  'F1 – Preparación DT': { color:'#8b9cf4', sig:(l)=>'F2 – Replanteo', items:['Planos impresos','Carpeta física armada','Hoja de notas por mueble preparada','Cámara/teléfono con carga','Herramientas de medición listas','Fecha de visita a obra confirmada'] },
+  'F2 – Replanteo': { color:'#60a5fa', sig:(l)=>'F3 – Planos Técnicos', items:['Mediciones tomadas (cinta/laser)','Fotos subidas a Drive','Nota: columnas registrada','Nota: revoque registrada','Nota: piso (cota) registrada','Nota: apertura de puertas registrada','Nota: cañerías/electricidad registrada','Notas cargadas en Notion'] },
+  'F3 – Planos Técnicos': { color:'#3b82f6', sig:(l)=>'F4 – Nesting', items:['Plano dibujado a escala real','1er envío al cliente realizado','Respuesta cliente registrada','Plano APROBADO por cliente','Aprobación guardada en Drive','Plano final en Drive','Detalles de materiales al pie COMPLETO'] },
+  'F4 – Nesting': { color:'#1d4ed8', sig:(l)=>'F5 – CNC', items:['Archivo Nesting guardado en Drive','Planos de armado impresos','Lista de materiales generada','Stock verificado contra lista','Etiquetas impresas para todas las piezas','Carpeta de taller física armada','Listado herrajes enviado'] },
+  'F5 – CNC': { color:'#f97316', sig:(l)=>'F6 – Mesa 1', items:['Archivo Nesting cargado y verificado','Existencia de materiales verificada','Archivo ejecutado sin errores','Etiqueta pegada en CADA pieza','Filos pegados según indicación','Piezas limpiadas y perfeccionadas','Piezas agrupadas por mueble'] },
+  'F6 – Mesa 1': { color:'#eab308', sig:(l)=>l?'F7 – Cabina':'F8 – Mesa 2', items:['Documentación revisada','Todas las piezas presentes y etiquetadas','Barrales cortados a medida (si aplica)','Ajustes de corte según plano','Fresado de bordes según indicación','Pedidos especiales de DT ejecutados','Piezas listas para siguiente fase'] },
+  'F7 – Cabina': { color:'#a855f7', sig:(l)=>'F8 – Mesa 2', items:['Color/tipo de laca verificado en planos','Brillo/terminación verificado','Lijado parejo en todas las piezas','Fondo aplicado','Fondo lijado uniformemente','Terminación final aplicada','Secado completo','Sin defectos visuales'] },
+  'F8 – Mesa 2': { color:'#ca8a04', sig:(l)=>'F9 – Embalaje', items:['Piezas presentes sin daños','Armado final completo','Herrajes colocados (bisagras, correderas, tiradores)','Regulación de bisagras/correderas','Limpieza interior y exterior','Control de calidad visual','Aprobación interna'] },
+  'F9 – Embalaje': { color:'#22c55e', sig:(l)=>'✅ Listo para Envío', items:['Embalado con protección adecuada','Guarnición empaquetada y rotulada','Pintura para retoques incluida (si DT indica)','Accesorios adicionales incluidos','Lista de contenido completa y adjunta','Comparado con lista de envío total','Remito preparado','Foto del embalaje en Drive'] },
 };
 
-// ══════════════════════════════════════════
-// ESTADO
-// ══════════════════════════════════════════
-let state = {
-  operario: null,
-  tareasActivas: {}, // operario → {muebleId, muebleNombre, fase, obraId, obraName, prioridad, laqueado, inicio, pausaInicio, tiempoAcumulado, estado, ultimoComentario}
-  historial: [],
-  muebles: []
-};
+let S = { rol:null, mueble:null, tarea:null, checks:[], historial:[], muebles:[], activos:{} };
+let timerInt = null;
 
-let checklistState = []; // array de booleans
-let timerInterval = null;
+function load() { try { const s=localStorage.getItem('vlac_v5'); if(s) S={...S,...JSON.parse(s)}; } catch(e){} }
+function save() { try { localStorage.setItem('vlac_v5', JSON.stringify(S)); } catch(e){} }
 
-function loadState() {
+async function api(method, endpoint, body) {
   try {
-    const s = localStorage.getItem('vlac_prod_v3');
-    if (s) state = { ...state, ...JSON.parse(s) };
-  } catch(e) {}
-}
-
-function saveState() {
-  try {
-    localStorage.setItem('vlac_prod_v3', JSON.stringify(state));
-  } catch(e) {}
-}
-
-// ══════════════════════════════════════════
-// API NOTION
-// ══════════════════════════════════════════
-async function notionAPI(method, endpoint, body) {
-  try {
-    const res = await fetch(`/notion${endpoint}`, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: body ? JSON.stringify(body) : undefined
-    });
-    return await res.json();
-  } catch(e) {
-    console.warn('Notion API error:', e);
-    return null;
-  }
+    const r = await fetch(`/notion${endpoint}`, { method, headers:{'Content-Type':'application/json'}, body:body?JSON.stringify(body):undefined });
+    if(!r.ok) { console.warn('API error', r.status, await r.text()); return null; }
+    return await r.json();
+  } catch(e) { console.warn('fetch error', e); return null; }
 }
 
 async function loadMuebles() {
-  showLoading('Sincronizando muebles...');
-  let muebles = [];
-  let body = { page_size: 100 };
-
-  while (true) {
-    const res = await notionAPI('POST', `/databases/${MUEBLES_DB_ID}/query`, body);
-    if (!res || !res.results) break;
-
-    for (const p of res.results) {
-      const props = p.properties || {};
-      // El campo título puede tener cualquier nombre — buscamos el tipo "title"
-      let nombre = '';
-      for (const key of Object.keys(props)) {
-        if (props[key].type === 'title') {
-          nombre = props[key].title?.[0]?.plain_text || '';
-          break;
-        }
+  showLoad('Cargando muebles...');
+  let muebles=[], body={page_size:100};
+  while(true) {
+    const res = await api('POST', `/databases/${MUEBLES_DB_ID}/query`, body);
+    if(!res?.results) break;
+    for(const p of res.results) {
+      const pr = p.properties||{};
+      let nombre='';
+      for(const k of Object.keys(pr)) { if(pr[k].type==='title'){nombre=pr[k].title?.[0]?.plain_text||'';break;} }
+      if(!nombre||nombre.toLowerCase().includes('plantilla')) continue;
+      const obraRel = pr['Obra']?.relation?.[0];
+      let obraName='—';
+      if(obraRel) {
+        const op = await api('GET', `/pages/${obraRel.id}`);
+        if(op?.properties) for(const k of Object.keys(op.properties)){if(op.properties[k].type==='title'){obraName=op.properties[k].title?.[0]?.plain_text||'—';break;}}
       }
-      if (!nombre || nombre === 'Mueble - plantilla Base') continue;
-
-      const obraRel = props['Obra']?.relation?.[0];
-      let obraName = '—';
-      if (obraRel) {
-        const obraPage = await notionAPI('GET', `/pages/${obraRel.id}`);
-        obraName = obraPage?.properties?.['Nombre Obra']?.title?.[0]?.plain_text || '—';
-      }
-
-      muebles.push({
-        id: p.id,
-        nombre,
-        fase: props['Fase Actual']?.select?.name || '—',
-        obra: obraName,
-        prioridad: props['Prioridad']?.select?.name || 'Normal',
-        laqueado: props['Requiere Laqueado']?.checkbox || false,
-        ultimoComentario: props['Último comentario']?.rich_text?.[0]?.plain_text || ''
-      });
+      muebles.push({ id:p.id, nombre, fase:pr['Fase Actual']?.select?.name||'', obra:obraName, prioridad:pr['Prioridad']?.select?.name||'Normal', laqueado:pr['Requiere Laqueado']?.checkbox||false, nota:pr['Último comentario']?.rich_text?.[0]?.plain_text||'' });
     }
-
-    if (res.has_more) body.start_cursor = res.next_cursor;
-    else break;
+    if(res.has_more) body.start_cursor=res.next_cursor; else break;
   }
-
-  state.muebles = muebles;
-  saveState();
-  renderMuebleSelect();
-  renderKanban();
-  hideLoading();
+  S.muebles=muebles; save(); hideLoad();
 }
 
-async function avanzarFaseEnNotion(muebleId, nuevaFase, fechaFinalizado, campoFinalizado, comentario) {
+async function recargarMuebles() { await loadMuebles(); renderMuebleList(); renderKanban(); toast('✓ Sincronizado','ok'); }
+
+async function notionAvanzar(id, fase, sig, fechaFin, comentario, problemas) {
+  const num = fase.split('–')[0].trim();
+  const nxt = {'F0':'F1','F1':'F2','F2':'F3','F3':'F4','F4':'F5','F5':'F6','F6':'F7','F7':'F8','F8':'F9'}[num];
   const ahora = new Date().toISOString();
-  const props = {
-    'Fase Actual': { select: { name: nuevaFase } },
-    [campoFinalizado]: { date: { start: fechaFinalizado } }
-  };
-
-  // Campo recibido de la nueva fase
-  const num = campoFinalizado.replace('Finalizado ', '');
-  const siguienteNum = getSiguienteNum(num);
-  if (siguienteNum) {
-    props[`Recibido ${siguienteNum}`] = { date: { start: ahora } };
-  }
-
-  // Guardar comentario si hay
-  if (comentario && comentario.trim()) {
-    props['Último comentario'] = { rich_text: [{ text: { content: comentario.trim() } }] };
-  }
-
-  await notionAPI('PATCH', `/pages/${muebleId}`, { properties: props });
+  const props = { 'Fase Actual':{select:{name:sig}}, [`Finalizado ${num}`]:{date:{start:fechaFin}} };
+  if(nxt && sig!=='✅ Listo para Envío') props[`Recibido ${nxt}`]={date:{start:ahora}};
+  let nota = '';
+  if(problemas.length) nota = 'PROBLEMAS: '+problemas.join(' | ')+(comentario?'\n'+comentario:'');
+  else if(comentario) nota = comentario;
+  if(nota) props['Último comentario']={rich_text:[{text:{content:nota}}]};
+  const r = await api('PATCH', `/pages/${id}`, {properties:props});
+  return r!==null;
 }
 
-function getSiguienteNum(actual) {
-  const mapa = { 'F0': 'F1', 'F1': 'F2', 'F2': 'F3', 'F3': 'F4', 'F4': 'F5', 'F5': 'F6', 'F6': 'F7', 'F7': 'F8', 'F8': 'F9' };
-  return mapa[actual] || null;
+async function notionInicio(id, fase) {
+  const num = fase.split('–')[0].trim();
+  await api('PATCH', `/pages/${id}`, {properties:{[`Iniciado ${num}`]:{date:{start:new Date().toISOString()}}}});
 }
 
-async function recargarMuebles() {
-  state.muebles = [];
-  await loadMuebles();
-  toast('✓ Sincronizado con Notion', 'ok');
+// ROLES
+function renderRoles() {
+  document.getElementById('rolGrid').innerHTML = ROLES.map(r=>`
+    <button class="rol-btn ${S.rol?.id===r.id?'active':''}" onclick="selectRol('${r.id}')">
+      <div class="rol-btn-icon">${r.icon}</div>
+      <div class="rol-btn-name">${r.nombre}</div>
+      <div class="rol-btn-fases">${r.fases.map(f=>f.split('–')[0].trim()).join(' · ')}</div>
+    </button>`).join('');
 }
 
-// ══════════════════════════════════════════
-// RENDER
-// ══════════════════════════════════════════
-function renderOperarioGrid() {
-  const grid = document.getElementById('operarioGrid');
-  grid.innerHTML = OPERARIOS.map(op => `
-    <button class="op-btn ${state.operario === op ? 'active' : ''}" onclick="selectOperario('${op}')">${op}</button>
-  `).join('');
-}
+function selectRol(id) { S.rol=ROLES.find(r=>r.id===id); save(); renderRoles(); mostrarMuebles(); }
+function volverARol() { S.rol=null; S.mueble=null; save(); show('paso-rol'); hide('paso-muebles'); hide('paso-detalle'); renderRoles(); }
 
-function selectOperario(nombre) {
-  state.operario = nombre;
-  saveState();
-  renderOperarioGrid();
-  renderPanelOperario();
-}
-
-function renderPanelOperario() {
-  const op = state.operario;
-  if (!op) {
-    document.getElementById('sinOperario').style.display = 'block';
-    document.getElementById('panelOperario').style.display = 'none';
-    return;
-  }
-  document.getElementById('sinOperario').style.display = 'none';
-  document.getElementById('panelOperario').style.display = 'block';
-
-  const tarea = state.tareasActivas[op];
-  if (tarea) {
-    document.getElementById('panelTareaActiva').style.display = 'block';
-    document.getElementById('panelSinTarea').style.display = 'none';
-    renderTareaActiva(tarea);
-    startTimer();
-  } else {
-    document.getElementById('panelTareaActiva').style.display = 'none';
-    document.getElementById('panelSinTarea').style.display = 'block';
-    stopTimer();
-    renderMuebleSelect();
-  }
-}
-
-function renderTareaActiva(tarea) {
-  document.getElementById('activoNombre').textContent = tarea.muebleNombre;
-  document.getElementById('activoFase').textContent = tarea.fase;
-  document.getElementById('activoObra').textContent = tarea.obra || '—';
-  document.getElementById('activoPrioridad').textContent = tarea.prioridad || 'Normal';
-
-  const btnPausar = document.getElementById('btnPausar');
-  if (tarea.estado === 'pausado') {
-    btnPausar.textContent = '▶ Reanudar';
-    btnPausar.onclick = () => accion('reanudar');
-    document.getElementById('timerEstado').textContent = 'PAUSADO';
-    document.getElementById('timerDisplay').className = 'timer-display paused';
-  } else {
-    btnPausar.textContent = '⏸ Pausar';
-    btnPausar.onclick = () => accion('pausar');
-    document.getElementById('timerEstado').textContent = 'EN CURSO';
-    document.getElementById('timerDisplay').className = 'timer-display running';
-  }
-
-  // Comentario anterior
-  const advWrap = document.getElementById('advertenciaWrap');
-  if (tarea.ultimoComentario) {
-    advWrap.style.display = 'block';
-    document.getElementById('advertenciaTexto').textContent = tarea.ultimoComentario;
-  } else {
-    advWrap.style.display = 'none';
-  }
-}
-
-function renderMuebleSelect() {
-  const sel = document.getElementById('muebleSelect');
-  const muebles = state.muebles.filter(m => m.fase && m.fase !== '✅ Listo para Envío');
-  sel.innerHTML = '<option value="">— Elegí un mueble —</option>' +
-    muebles.map(m => `<option value="${m.id}">${m.nombre} · ${m.fase}</option>`).join('');
-
-  sel.onchange = () => {
-    const m = state.muebles.find(x => x.id === sel.value);
-    if (m) {
-      document.getElementById('muebleInfo').style.display = 'block';
-      document.getElementById('infoNombre').textContent = m.nombre;
-      document.getElementById('infoFase').textContent = m.fase;
-      document.getElementById('infoObra').textContent = m.obra || '—';
-      document.getElementById('infoPrioridad').textContent = m.prioridad || 'Normal';
-      const iAdv = document.getElementById('infoAdvertenciaWrap');
-      if (m.ultimoComentario) {
-        iAdv.style.display = 'block';
-        document.getElementById('infoAdvertenciaTexto').textContent = m.ultimoComentario;
-      } else {
-        iAdv.style.display = 'none';
-      }
-    } else {
-      document.getElementById('muebleInfo').style.display = 'none';
-    }
-  };
-}
-
-// ══════════════════════════════════════════
-// ACCIONES
-// ══════════════════════════════════════════
-async function accion(tipo) {
-  const op = state.operario;
-  if (!op) { toast('Seleccioná tu nombre primero', 'error'); return; }
-
-  const ahora = new Date().toISOString();
-
-  if (tipo === 'iniciar') {
-    const muebleId = document.getElementById('muebleSelect').value;
-    if (!muebleId) { toast('Seleccioná un mueble', 'error'); return; }
-    const mueble = state.muebles.find(m => m.id === muebleId);
-    if (!mueble) return;
-
-    // Registrar inicio en Notion
-    const numFase = mueble.fase.split('–')[0].trim(); // ej: "F5"
-    showLoading('Iniciando...');
-    await notionAPI('PATCH', `/pages/${muebleId}`, {
-      properties: { [`Iniciado ${numFase}`]: { date: { start: ahora } } }
-    });
-    hideLoading();
-
-    state.tareasActivas[op] = {
-      muebleId,
-      muebleNombre: mueble.nombre,
-      fase: mueble.fase,
-      obra: mueble.obra,
-      prioridad: mueble.prioridad,
-      laqueado: mueble.laqueado,
-      ultimoComentario: mueble.ultimoComentario,
-      inicio: ahora,
-      pausaInicio: null,
-      tiempoAcumulado: 0,
-      estado: 'activo'
-    };
-    saveState();
-    renderPanelOperario();
-    toast(`✓ Iniciado: ${mueble.nombre}`, 'ok');
-
-  } else if (tipo === 'pausar') {
-    const tarea = state.tareasActivas[op];
-    if (!tarea) return;
-    tarea.pausaInicio = ahora;
-    tarea.estado = 'pausado';
-    saveState();
-    renderTareaActiva(tarea);
-    toast('⏸ Pausado', 'ok');
-
-  } else if (tipo === 'reanudar') {
-    const tarea = state.tareasActivas[op];
-    if (!tarea || !tarea.pausaInicio) return;
-    const pausaDuracion = new Date(ahora) - new Date(tarea.pausaInicio);
-    tarea.tiempoAcumulado = (tarea.tiempoAcumulado || 0) + pausaDuracion;
-    tarea.pausaInicio = null;
-    tarea.estado = 'activo';
-    saveState();
-    renderTareaActiva(tarea);
-    toast('▶ Reanudado', 'ok');
-  }
-}
-
-// ══════════════════════════════════════════
-// CHECKLIST
-// ══════════════════════════════════════════
-function abrirChecklist() {
-  const op = state.operario;
-  const tarea = state.tareasActivas[op];
-  if (!tarea) return;
-
-  const config = FASES_CONFIG[tarea.fase];
-  if (!config) {
-    // Sin checklist configurado, finalizar directo
-    confirmarFaseSinChecklist();
-    return;
-  }
-
-  const items = config.checklist;
-  checklistState = items.map(() => false);
-
-  document.getElementById('checklistTitle').textContent = tarea.muebleNombre;
-  document.getElementById('checklistSubtitle').textContent = tarea.fase + ' — Confirmá cada paso completado';
-  document.getElementById('comentarioInput').value = '';
-
-  renderChecklistItems(items);
-  actualizarProgress(items.length);
-
-  document.getElementById('modalChecklist').classList.add('open');
-}
-
-function renderChecklistItems(items) {
-  const cont = document.getElementById('checklistItems');
-  cont.innerHTML = items.map((item, i) => `
-    <div class="checklist-item ${checklistState[i] ? 'checked' : ''}" onclick="toggleCheck(${i})">
-      <div class="check-box"></div>
-      <div class="check-text">${item}</div>
-    </div>
-  `).join('');
-}
-
-function toggleCheck(i) {
-  const op = state.operario;
-  const tarea = state.tareasActivas[op];
-  if (!tarea) return;
-  const config = FASES_CONFIG[tarea.fase];
-  if (!config) return;
-
-  checklistState[i] = !checklistState[i];
-  const items = config.checklist;
-  renderChecklistItems(items);
-  actualizarProgress(items.length);
-}
-
-function actualizarProgress(total) {
-  const completados = checklistState.filter(Boolean).length;
-  const pct = total > 0 ? (completados / total) * 100 : 0;
-  document.getElementById('progressBar').style.width = pct + '%';
-  document.getElementById('progressText').textContent = `${completados} / ${total}`;
-
-  const btn = document.getElementById('btnConfirmarFase');
-  const todoOk = completados === total;
-  btn.style.opacity = todoOk ? '1' : '0.5';
-  btn.textContent = todoOk ? 'Aprobar y avanzar fase →' : `Falta completar ${total - completados} ítem${total - completados !== 1 ? 's' : ''}`;
-}
-
-function cerrarChecklist() {
-  document.getElementById('modalChecklist').classList.remove('open');
-}
-
-async function confirmarFase() {
-  const completados = checklistState.filter(Boolean).length;
-  if (completados < checklistState.length) {
-    toast('Completá todos los ítems primero', 'error');
-    return;
-  }
-
-  const op = state.operario;
-  const tarea = state.tareasActivas[op];
-  if (!tarea) return;
-
-  const config = FASES_CONFIG[tarea.fase];
-  const laqueado = tarea.laqueado;
-  const siguienteFase = config ? config.siguiente(laqueado) : null;
-  const comentario = document.getElementById('comentarioInput').value;
-  const ahora = new Date().toISOString();
-  const numFase = tarea.fase.split('–')[0].trim();
-  const campoFinalizado = `Finalizado ${numFase}`;
-
-  showLoading('Avanzando fase...');
-  cerrarChecklist();
-
-  if (siguienteFase) {
-    await avanzarFaseEnNotion(tarea.muebleId, siguienteFase, ahora, campoFinalizado, comentario);
-  }
-
-  // Calcular duración
-  const inicio = new Date(tarea.inicio);
-  const fin = new Date(ahora);
-  const duracionMs = (fin - inicio) - (tarea.tiempoAcumulado || 0);
-  const horas = Math.max(0, duracionMs / 3600000);
-
-  // Guardar en historial
-  state.historial.push({
-    operario: op,
-    mueble: tarea.muebleNombre,
-    fase: tarea.fase,
-    inicio: tarea.inicio,
-    fin: ahora,
-    horas: horas.toFixed(2),
-    comentario: comentario || ''
-  });
-
-  delete state.tareasActivas[op];
-  saveState();
-
-  // Actualizar mueble en lista local
-  const idx = state.muebles.findIndex(m => m.id === tarea.muebleId);
-  if (idx >= 0 && siguienteFase) {
-    state.muebles[idx].fase = siguienteFase;
-    state.muebles[idx].ultimoComentario = comentario || '';
-  }
-
-  hideLoading();
-  stopTimer();
-  renderPanelOperario();
-  renderKanban();
-  renderAdmin();
-  toast(`✓ ${tarea.muebleNombre} avanzó a ${siguienteFase || 'Listo para Envío'}`, 'ok');
-}
-
-// ══════════════════════════════════════════
-// KANBAN
-// ══════════════════════════════════════════
-function renderKanban() {
-  const board = document.getElementById('kanbanBoard');
-  const fases = Object.keys(FASES_CONFIG).concat(['✅ Listo para Envío']);
-
-  board.innerHTML = fases.map(fase => {
-    const muebles = state.muebles.filter(m => m.fase === fase);
-    const config = FASES_CONFIG[fase];
-    const color = config?.color || '#22c55e';
-    return `
-      <div class="kanban-col">
-        <div class="kanban-col-header" style="border-top: 3px solid ${color}">
-          <div class="kanban-col-title">${fase}</div>
-          <div class="kanban-col-count">${muebles.length}</div>
-        </div>
-        <div class="kanban-cards">
-          ${muebles.length === 0 ? '<div style="font-size:11px;color:var(--muted);text-align:center;padding:8px">—</div>' :
-            muebles.map(m => `
-              <div class="kanban-card ${m.ultimoComentario ? 'has-warning' : ''}">
-                ${m.nombre}
-                <div class="kanban-card-obra">${m.obra}</div>
-                ${m.ultimoComentario ? `<div style="font-size:10px;color:var(--red);margin-top:4px">⚠ ${m.ultimoComentario}</div>` : ''}
-              </div>
-            `).join('')
-          }
-        </div>
+// MUEBLES
+function mostrarMuebles() { hide('paso-rol'); show('paso-muebles'); hide('paso-detalle'); renderMuebleList(); }
+function renderMuebleList() {
+  if(!S.rol) return;
+  const lista = S.muebles.filter(m=>S.rol.fases.includes(m.fase));
+  document.getElementById('muebles-label').textContent = `${S.rol.nombre} · ${lista.length} mueble${lista.length!==1?'s':''} disponible${lista.length!==1?'s':''}`;
+  const el = document.getElementById('muebleList');
+  if(!lista.length) { el.innerHTML='<div class="empty-state"><div class="empty-state-icon">✅</div>Sin muebles pendientes</div>'; return; }
+  el.innerHTML = lista.map(m=>`
+    <div class="mueble-item ${m.nota?'has-warning':''}" onclick="abrirMueble('${m.id}')">
+      <div class="mueble-item-left">
+        <div class="mueble-item-nombre">${m.nombre}</div>
+        <div class="mueble-item-meta">${m.obra} · ${m.prioridad}</div>
+        ${m.nota?`<div class="warning-preview">⚠ ${m.nota}</div>`:''}
       </div>
-    `;
+      <div class="mueble-item-fase">${m.fase.split('–')[0].trim()}</div>
+    </div>`).join('');
+}
+function volverAMuebles() { S.mueble=null; S.tarea=null; S.checks=[]; stopTimer(); save(); mostrarMuebles(); }
+
+// DETALLE
+function abrirMueble(id) {
+  const m=S.muebles.find(x=>x.id===id); if(!m) return;
+  S.mueble=m; S.tarea=null; S.checks=[]; save();
+  hide('paso-muebles'); show('paso-detalle');
+  document.getElementById('det-nombre').textContent=m.nombre;
+  document.getElementById('det-fase').textContent=m.fase;
+  document.getElementById('det-obra').textContent=m.obra;
+  document.getElementById('det-prioridad').textContent=m.prioridad;
+  document.getElementById('det-laqueado').textContent=m.laqueado?'✅ Sí':'—';
+  document.getElementById('comentario-input').value='';
+  const ww=document.getElementById('det-warning');
+  if(m.nota){ww.style.display='flex';document.getElementById('det-warning-text').textContent=m.nota;}
+  else ww.style.display='none';
+  const cfg=FASES[m.fase];
+  if(cfg?.items){S.checks=cfg.items.map(()=>null);renderChecks(cfg.items);document.getElementById('checklist-section').style.display='block';}
+  else document.getElementById('checklist-section').style.display='none';
+  document.getElementById('timer-card').style.display='none';
+  show('acciones-pre'); hide('acciones-activo');
+  document.getElementById('acciones-pre').style.display='flex';
+  document.getElementById('acciones-activo').style.display='none';
+}
+
+function renderChecks(items) {
+  document.getElementById('checklist-items').innerHTML = items.map((item,i)=>{
+    const v=S.checks[i];
+    return `<div class="checklist-row">
+      <div class="check-text ${v==='ok'?'ok-state':v==='noapl'?'noapl-state':v==='prob'?'prob-state':''}">${item}</div>
+      <div class="check-btns">
+        <button class="check-btn ${v==='ok'?'sel-ok':''}" onclick="setCheck(${i},'ok')" title="OK">✓</button>
+        <button class="check-btn ${v==='noapl'?'sel-noapl':''}" onclick="setCheck(${i},'noapl')" title="No aplica">—</button>
+        <button class="check-btn ${v==='prob'?'sel-prob':''}" onclick="setCheck(${i},'prob')" title="Problema">⚠</button>
+      </div>
+    </div>`;
+  }).join('');
+  const done=S.checks.filter(x=>x!==null).length;
+  const total=items.length;
+  document.getElementById('check-prog-bar').style.width=(total>0?done/total*100:0)+'%';
+  document.getElementById('check-prog-text').textContent=`${done} / ${total}`;
+}
+
+function setCheck(i,v) {
+  S.checks[i]=S.checks[i]===v?null:v;
+  const cfg=FASES[S.mueble?.fase];
+  if(cfg?.items) renderChecks(cfg.items);
+  save();
+}
+
+async function iniciarFase() {
+  const m=S.mueble; if(!m) return;
+  const cfg=FASES[m.fase];
+  if(cfg?.items){const inc=S.checks.filter(x=>x===null).length;if(inc>0){toast(`Completá los ${inc} ítem${inc!==1?'s':''} primero`,'error');return;}}
+  showLoad('Iniciando...');
+  await notionInicio(m.id, m.fase);
+  hideLoad();
+  const ahora=new Date().toISOString();
+  S.tarea={inicio:ahora,pausaInicio:null,tiempoAcumulado:0,estado:'activo'};
+  S.activos[S.rol.id]={muebleNombre:m.nombre,fase:m.fase,inicio:ahora,estado:'activo'};
+  save();
+  document.getElementById('timer-card').style.display='block';
+  document.getElementById('acciones-pre').style.display='none';
+  document.getElementById('acciones-activo').style.display='flex';
+  document.getElementById('timer-display').className='timer-display running';
+  document.getElementById('timer-estado').textContent='EN CURSO';
+  startTimer();
+  toast(`▶ Iniciado: ${m.nombre}`,'ok');
+}
+
+function pausarReanudar() {
+  const t=S.tarea; if(!t) return;
+  const ahora=new Date().toISOString();
+  const btn=document.getElementById('btn-pausar');
+  if(t.estado==='activo'){
+    t.pausaInicio=ahora; t.estado='pausado';
+    btn.textContent='▶ Reanudar';
+    document.getElementById('timer-display').className='timer-display paused';
+    document.getElementById('timer-estado').textContent='PAUSADO';
+    if(S.activos[S.rol?.id]) S.activos[S.rol.id].estado='pausado';
+    toast('⏸ Pausado','ok');
+  } else {
+    t.tiempoAcumulado+=new Date(ahora)-new Date(t.pausaInicio);
+    t.pausaInicio=null; t.estado='activo';
+    btn.textContent='⏸ Pausar';
+    document.getElementById('timer-display').className='timer-display running';
+    document.getElementById('timer-estado').textContent='EN CURSO';
+    if(S.activos[S.rol?.id]) S.activos[S.rol.id].estado='activo';
+    toast('▶ Reanudado','ok');
+  }
+  save();
+}
+
+async function finalizarFase() {
+  const m=S.mueble, t=S.tarea; if(!m||!t) return;
+  const cfg=FASES[m.fase];
+  const sig=cfg?cfg.sig(m.laqueado):'✅ Listo para Envío';
+  const comentario=document.getElementById('comentario-input').value;
+  const ahora=new Date().toISOString();
+  const problemas=cfg?.items?cfg.items.filter((_,i)=>S.checks[i]==='prob'):[];
+  showLoad('Finalizando...');
+  const ok=await notionAvanzar(m.id,m.fase,sig,ahora,comentario,problemas);
+  hideLoad();
+  if(!ok){toast('Error al actualizar Notion','error');return;}
+  const durMs=Math.max(0,(new Date(ahora)-new Date(t.inicio))-t.tiempoAcumulado);
+  S.historial.push({rol:S.rol?.nombre,mueble:m.nombre,fase:m.fase,fin:ahora,horas:(durMs/3600000).toFixed(2),problemas:problemas.join(', '),comentario:comentario||''});
+  const idx=S.muebles.findIndex(x=>x.id===m.id);
+  if(idx>=0){S.muebles[idx].fase=sig;S.muebles[idx].nota=problemas.length?'PROBLEMAS: '+problemas.join(' | ')+(comentario?'\n'+comentario:''):(comentario||'');}
+  if(S.activos) delete S.activos[S.rol?.id];
+  S.mueble=null; S.tarea=null; S.checks=[]; stopTimer(); save();
+  renderKanban();
+  toast(`✓ ${m.nombre} → ${sig}`,'ok');
+  mostrarMuebles();
+}
+
+// TIMER
+function calcT(t){if(!t)return 0;const n=Date.now();let e=n-new Date(t.inicio)-( t.tiempoAcumulado||0);if(t.pausaInicio)e-=(n-new Date(t.pausaInicio));return Math.max(0,e);}
+function fmtT(ms){const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;}
+function startTimer(){stopTimer();timerInt=setInterval(()=>{const d=document.getElementById('timer-display');if(d&&S.tarea)d.textContent=fmtT(calcT(S.tarea));},1000);}
+function stopTimer(){if(timerInt){clearInterval(timerInt);timerInt=null;}}
+
+// KANBAN
+function renderKanban(){
+  const fases=[...Object.keys(FASES),'✅ Listo para Envío'];
+  document.getElementById('kanbanBoard').innerHTML=fases.map(f=>{
+    const ms=S.muebles.filter(m=>m.fase===f);
+    const color=FASES[f]?.color||'#22c55e';
+    return `<div class="kanban-col"><div class="kanban-col-header" style="border-top:3px solid ${color}"><div class="kanban-col-title">${f}</div><div class="kanban-col-count">${ms.length}</div></div><div class="kanban-cards">${ms.length?ms.map(m=>`<div class="kanban-card ${m.nota?'has-warning':''}">${m.nombre}<div class="kanban-card-obra">${m.obra}</div></div>`).join(''):'<div style="font-size:10px;color:var(--muted);text-align:center;padding:6px">—</div>'}</div></div>`;
   }).join('');
 }
 
-// ══════════════════════════════════════════
 // ADMIN
-// ══════════════════════════════════════════
-function renderAdmin() {
-  const grid = document.getElementById('adminGrid');
-  const activos = Object.entries(state.tareasActivas);
-
-  if (activos.length === 0) {
-    grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">😴</div>Nadie trabajando</div>';
-  } else {
-    grid.innerHTML = activos.map(([op, tarea]) => {
-      const tiempo = calcTiempo(tarea);
-      const paused = tarea.estado === 'pausado';
-      return `
-        <div class="admin-card">
-          <div class="admin-card-op"><span class="status-dot ${paused ? 'paused' : ''}"></span>${op}</div>
-          <div class="admin-card-mueble">${tarea.muebleNombre}</div>
-          <div class="admin-card-fase">${tarea.fase}</div>
-          <div class="admin-card-timer ${paused ? 'paused' : ''}">${formatTiempo(tiempo)}</div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  // Historial
-  const tbody = document.getElementById('historialBody');
-  const hoy = new Date().toDateString();
-  const registrosHoy = state.historial.filter(r => new Date(r.fin).toDateString() === hoy);
-
-  if (registrosHoy.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">Sin registros hoy</td></tr>';
-  } else {
-    tbody.innerHTML = registrosHoy.slice().reverse().map(r => `
-      <tr>
-        <td>${r.operario}</td>
-        <td>${r.mueble}</td>
-        <td>${r.fase}</td>
-        <td>${r.horas}h</td>
-        <td>${r.comentario ? `<span style="color:var(--yellow)">${r.comentario}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
-      </tr>
-    `).join('');
-  }
+function renderAdmin(){
+  const activos=Object.entries(S.activos||{}).filter(([,t])=>t);
+  const grid=document.getElementById('adminGrid');
+  grid.innerHTML=activos.length?activos.map(([rol,t])=>{const p=t.estado==='pausado';return `<div class="admin-card"><div class="admin-card-op"><span class="status-dot ${p?'paused':''}"></span>${rol}</div><div class="admin-card-mueble">${t.muebleNombre}</div><div class="admin-card-fase">${t.fase}</div><div class="admin-card-timer ${p?'paused':''}">${fmtT(calcT(t))}</div></div>`;}).join(''):'<div class="empty-state"><div class="empty-state-icon">😴</div>Nadie trabajando</div>';
+  const hoy=new Date().toDateString();
+  const regs=(S.historial||[]).filter(r=>new Date(r.fin).toDateString()===hoy);
+  document.getElementById('historialBody').innerHTML=regs.length?regs.slice().reverse().map(r=>`<tr><td>${r.rol}</td><td>${r.mueble}</td><td>${r.fase}</td><td>${r.horas}h</td><td style="color:var(--red)">${r.problemas||'—'}</td><td style="color:var(--yellow)">${r.comentario||'—'}</td></tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Sin registros hoy</td></tr>';
 }
 
-// ══════════════════════════════════════════
-// TIMER
-// ══════════════════════════════════════════
-function calcTiempo(tarea) {
-  if (!tarea) return 0;
-  const ahora = Date.now();
-  let elapsed = ahora - new Date(tarea.inicio).getTime();
-  if (tarea.tiempoAcumulado) elapsed -= tarea.tiempoAcumulado;
-  if (tarea.pausaInicio) elapsed -= (ahora - new Date(tarea.pausaInicio).getTime());
-  return Math.max(0, elapsed);
-}
-
-function formatTiempo(ms) {
-  const s = Math.floor(ms / 1000);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
-}
-
-function startTimer() {
-  stopTimer();
-  timerInterval = setInterval(() => {
-    const op = state.operario;
-    const tarea = state.tareasActivas[op];
-    if (!tarea) { stopTimer(); return; }
-    const display = document.getElementById('timerDisplay');
-    display.textContent = formatTiempo(calcTiempo(tarea));
-  }, 1000);
-}
-
-function stopTimer() {
-  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-}
-
-// ══════════════════════════════════════════
 // UI HELPERS
-// ══════════════════════════════════════════
-function showView(name) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById(`view-${name}`).classList.add('active');
-  event.target.classList.add('active');
-  if (name === 'admin') renderAdmin();
-  if (name === 'kanban') renderKanban();
-}
+function show(id){const e=document.getElementById(id);if(e)e.style.display='block';}
+function hide(id){const e=document.getElementById(id);if(e)e.style.display='none';}
+function showTab(name,btn){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById(`view-${name}`).classList.add('active');btn.classList.add('active');if(name==='admin')renderAdmin();if(name==='kanban')renderKanban();}
+function showLoad(t){document.getElementById('loading-text').textContent=t||'CARGANDO...';document.getElementById('loading').classList.add('show');}
+function hideLoad(){document.getElementById('loading').classList.remove('show');}
+function toast(msg,tipo='ok'){const e=document.getElementById('toast');e.textContent=msg;e.className=`toast ${tipo} show`;setTimeout(()=>e.classList.remove('show'),3000);}
+function updateClock(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
 
-function showLoading(txt) {
-  document.getElementById('loadingText').textContent = txt || 'CARGANDO...';
-  document.getElementById('loading').classList.add('show');
-}
-
-function hideLoading() {
-  document.getElementById('loading').classList.remove('show');
-}
-
-function toast(msg, tipo = 'ok') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = `toast ${tipo} show`;
-  setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-function updateClock() {
-  const now = new Date();
-  document.getElementById('clock').textContent =
-    now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
-// ══════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════
-async function init() {
-  loadState();
-  renderOperarioGrid();
-  renderPanelOperario();
-  setInterval(updateClock, 1000);
-  updateClock();
+async function init(){
+  load();
+  S.rol=null; S.mueble=null; S.tarea=null; S.checks=[]; S.activos={}; save();
+  renderRoles();
+  setInterval(updateClock,1000); updateClock();
   await loadMuebles();
   renderKanban();
-
-  // Refrescar admin cada 30s
-  setInterval(() => { renderAdmin(); }, 30000);
+  setInterval(renderAdmin,30000);
 }
-
 init();
 </script>
 </body>
