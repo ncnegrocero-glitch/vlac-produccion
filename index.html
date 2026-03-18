@@ -1,542 +1,224 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>VLAC · Producción</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+#!/usr/bin/env python3
+"""
+VLAC Producción — Avance automático de fases
+=============================================
+Lógica:
+  - Si un mueble tiene "Finalizado F(n)" con fecha cargada
+    Y su Fase Actual es "F(n) – ..." 
+    → avanza automáticamente a la siguiente fase
+  
+  Regla especial F6 (Mesa 1):
+    - Si Requiere Laqueado = True  → siguiente fase es F7 – Cabina
+    - Si Requiere Laqueado = False → siguiente fase es F8 – Mesa 2
 
-  :root {
-    --bg: #0a0a0a; --bg2: #141414; --bg3: #1e1e1e; --bg4: #282828;
-    --border: #2a2a2a; --accent: #f5a623; --accent-dim: rgba(245,166,35,0.12);
-    --green: #22c55e; --green-dim: rgba(34,197,94,0.12);
-    --red: #ef4444; --red-dim: rgba(239,68,68,0.12);
-    --yellow: #eab308; --yellow-dim: rgba(234,179,8,0.12);
-    --text: #f0f0f0; --text2: #a0a0a0; --muted: #505050;
-    --font-display: 'Bebas Neue', sans-serif;
-    --font-mono: 'IBM Plex Mono', monospace;
-    --font-sans: 'IBM Plex Sans', sans-serif;
-    --radius: 8px;
-  }
+Uso:
+  1. Completar NOTION_TOKEN y DATABASE_ID abajo
+  2. Correr en terminal: python3 avance_fases.py
+"""
 
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  body { background:var(--bg); color:var(--text); font-family:var(--font-sans); min-height:100vh; overflow-x:hidden; }
+import urllib.request
+import urllib.error
+import json
+from datetime import datetime
 
-  .header { background:var(--bg2); border-bottom:1px solid var(--border); padding:0 20px; height:52px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:200; }
-  .logo { font-family:var(--font-display); font-size:24px; letter-spacing:4px; color:var(--accent); }
-  .logo span { color:var(--text2); font-size:12px; letter-spacing:1px; margin-left:8px; font-family:var(--font-mono); }
-  .header-right { display:flex; align-items:center; gap:10px; }
-  .header-clock { font-family:var(--font-mono); font-size:11px; color:var(--muted); }
-  .btn-sm { background:none; border:1px solid var(--border); color:var(--muted); font-family:var(--font-mono); font-size:10px; padding:5px 10px; border-radius:5px; cursor:pointer; transition:all 0.15s; }
-  .btn-sm:hover { border-color:var(--accent); color:var(--accent); }
+# ─────────────────────────────────────────
+# CONFIGURACIÓN — completar antes de correr
+# ─────────────────────────────────────────
+NOTION_TOKEN  = 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   # secret_... o ntn_...
+DATABASE_ID   = "3175a392e02d807f9967ed48823fe831"
+# ─────────────────────────────────────────
 
-  .tabs { background:var(--bg2); border-bottom:1px solid var(--border); display:flex; padding:0 20px; }
-  .tab { font-family:var(--font-mono); font-size:10px; font-weight:600; letter-spacing:1px; padding:11px 16px; border:none; background:none; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.15s; text-transform:uppercase; }
-  .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
-
-  .view { display:none; } .view.active { display:block; }
-  .wrap { max-width:520px; margin:0 auto; padding:24px 16px 60px; }
-  .section-label { font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:10px; }
-
-  /* ROL */
-  .rol-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:28px; }
-  .rol-btn { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:16px 12px; cursor:pointer; transition:all 0.15s; text-align:left; }
-  .rol-btn:hover { border-color:var(--accent); }
-  .rol-btn.active { background:var(--accent-dim); border-color:var(--accent); }
-  .rol-btn-icon { font-size:22px; margin-bottom:6px; }
-  .rol-btn-name { font-family:var(--font-display); font-size:18px; letter-spacing:1px; color:var(--text); }
-  .rol-btn-fases { font-family:var(--font-mono); font-size:10px; color:var(--muted); margin-top:2px; }
-
-  /* MUEBLE LIST */
-  .mueble-list { display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
-  .mueble-item { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; cursor:pointer; transition:all 0.15s; display:flex; justify-content:space-between; align-items:center; }
-  .mueble-item:hover { border-color:var(--accent); }
-  .mueble-item-left { flex:1; }
-  .mueble-item-nombre { font-family:var(--font-display); font-size:18px; letter-spacing:0.5px; margin-bottom:3px; }
-  .mueble-item-meta { font-size:12px; color:var(--text2); }
-  .mueble-item-fase { font-family:var(--font-mono); font-size:10px; padding:3px 8px; border-radius:4px; background:var(--accent-dim); color:var(--accent); white-space:nowrap; margin-left:10px; }
-  .mueble-item.has-warning { border-left:3px solid var(--red); }
-  .warning-preview { font-size:11px; color:var(--red); margin-top:4px; }
-
-  /* DETALLE */
-  .detalle-header { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:16px; }
-  .detalle-top { background:var(--bg3); padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:flex-start; }
-  .detalle-nombre { font-family:var(--font-display); font-size:26px; letter-spacing:1px; flex:1; }
-  .detalle-fase { font-family:var(--font-mono); font-size:10px; padding:4px 10px; border-radius:4px; background:var(--accent-dim); color:var(--accent); }
-  .detalle-meta { padding:12px 20px; display:flex; gap:20px; }
-  .meta-item { display:flex; flex-direction:column; gap:2px; }
-  .meta-key { font-size:10px; color:var(--muted); font-family:var(--font-mono); letter-spacing:1px; }
-  .meta-val { font-size:13px; color:var(--text2); font-weight:500; }
-
-  /* CHECKLIST */
-  .checklist-section { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:16px; }
-  .checklist-header { background:var(--bg3); padding:12px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
-  .checklist-title { font-family:var(--font-mono); font-size:11px; letter-spacing:1px; color:var(--text2); text-transform:uppercase; }
-  .checklist-prog-text { font-family:var(--font-mono); font-size:11px; color:var(--muted); }
-  .prog-bar-wrap { height:3px; background:var(--bg4); }
-  .prog-bar { height:100%; background:var(--green); transition:width 0.3s; }
-  .checklist-row { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:10px; }
-  .checklist-row:last-child { border-bottom:none; }
-  .check-text { flex:1; font-size:14px; color:var(--text2); line-height:1.4; padding-top:4px; }
-  .check-text.ok-state { color:var(--text); }
-  .check-text.noapl-state { color:var(--muted); text-decoration:line-through; }
-  .check-text.prob-state { color:var(--red); }
-  .check-btns { display:flex; gap:5px; flex-shrink:0; }
-  .check-btn { width:34px; height:34px; border-radius:6px; border:1px solid var(--border); background:var(--bg4); cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
-  .check-btn:hover { transform:scale(1.1); }
-  .check-btn.sel-ok { background:var(--green-dim); border-color:var(--green); }
-  .check-btn.sel-noapl { background:var(--bg3); border-color:var(--muted); }
-  .check-btn.sel-prob { background:var(--red-dim); border-color:var(--red); }
-
-  /* TIMER */
-  .timer-card { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:16px; }
-  .timer-display { font-family:var(--font-mono); font-size:48px; font-weight:600; letter-spacing:4px; text-align:center; padding:20px; line-height:1; color:var(--muted); }
-  .timer-display.running { color:var(--green); }
-  .timer-display.paused { color:var(--yellow); }
-  .timer-estado { text-align:center; font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--muted); padding-bottom:16px; text-transform:uppercase; }
-
-  /* BOTONES */
-  .acciones { display:flex; gap:10px; margin-bottom:16px; }
-  .btn { flex:1; padding:14px 10px; border:none; border-radius:var(--radius); font-family:var(--font-sans); font-size:14px; font-weight:600; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:center; gap:6px; }
-  .btn:disabled { opacity:0.3; cursor:not-allowed; }
-  .btn-green { background:var(--green); color:#000; }
-  .btn-green:hover:not(:disabled) { background:#16a34a; }
-  .btn-yellow { background:var(--bg4); border:1px solid var(--yellow); color:var(--yellow); }
-  .btn-yellow:hover:not(:disabled) { background:var(--yellow-dim); }
-  .btn-orange { background:var(--accent); color:#000; }
-  .btn-orange:hover:not(:disabled) { background:#d4891e; }
-
-  /* COMENTARIO */
-  .comentario-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:16px; }
-  .comentario-label { font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; margin-bottom:8px; }
-  .comentario-input { width:100%; background:var(--bg3); border:1px solid var(--border); color:var(--text); font-family:var(--font-sans); font-size:14px; padding:10px 12px; border-radius:var(--radius); resize:none; min-height:72px; outline:none; transition:border-color 0.15s; }
-  .comentario-input:focus { border-color:var(--accent); }
-  .comentario-input::placeholder { color:var(--muted); }
-
-  .warning-card { background:var(--red-dim); border:1px solid var(--red); border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:13px; color:var(--red); display:flex; gap:8px; line-height:1.4; }
-
-  .volver-btn { display:flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:11px; color:var(--muted); cursor:pointer; margin-bottom:20px; background:none; border:none; padding:0; transition:color 0.15s; }
-  .volver-btn:hover { color:var(--accent); }
-
-  /* KANBAN */
-  .kanban-wrap { padding:16px; overflow-x:auto; }
-  .kanban-board { display:flex; gap:10px; min-width:max-content; align-items:flex-start; }
-  .kanban-col { background:var(--bg2); border:1px solid var(--border); border-radius:10px; width:185px; flex-shrink:0; overflow:hidden; }
-  .kanban-col-header { padding:10px 12px; border-bottom:1px solid var(--border); background:var(--bg3); }
-  .kanban-col-title { font-family:var(--font-mono); font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--text2); margin-bottom:2px; }
-  .kanban-col-count { font-family:var(--font-display); font-size:20px; color:var(--accent); line-height:1; }
-  .kanban-cards { padding:8px; display:flex; flex-direction:column; gap:6px; min-height:40px; }
-  .kanban-card { background:var(--bg3); border:1px solid var(--border); border-radius:6px; padding:8px 10px; font-size:12px; font-weight:500; }
-  .kanban-card-obra { font-size:10px; color:var(--muted); margin-top:2px; font-family:var(--font-mono); }
-  .kanban-card.has-warning { border-left:3px solid var(--red); }
-
-  /* ADMIN */
-  .admin-wrap { max-width:860px; margin:0 auto; padding:20px; }
-  .admin-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:10px; margin-bottom:28px; }
-  .admin-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:14px; }
-  .admin-card-op { font-family:var(--font-mono); font-size:10px; letter-spacing:1px; color:var(--muted); text-transform:uppercase; margin-bottom:6px; }
-  .admin-card-mueble { font-family:var(--font-display); font-size:17px; margin-bottom:3px; }
-  .admin-card-fase { font-size:12px; color:var(--text2); margin-bottom:8px; }
-  .admin-card-timer { font-family:var(--font-mono); font-size:22px; font-weight:600; color:var(--green); }
-  .admin-card-timer.paused { color:var(--yellow); }
-  .status-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--green); margin-right:6px; animation:pulse 2s infinite; }
-  .status-dot.paused { background:var(--yellow); animation:none; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-  .hist-table { width:100%; border-collapse:collapse; font-size:13px; }
-  .hist-table th { text-align:left; font-family:var(--font-mono); font-size:10px; letter-spacing:1px; color:var(--muted); text-transform:uppercase; padding:10px 12px; border-bottom:1px solid var(--border); background:var(--bg2); }
-  .hist-table td { padding:10px 12px; border-bottom:1px solid var(--border); color:var(--text2); vertical-align:top; }
-
-  .toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(16px); background:var(--bg3); border:1px solid var(--border); color:var(--text); font-family:var(--font-mono); font-size:12px; padding:10px 18px; border-radius:8px; z-index:500; opacity:0; transition:all 0.25s; white-space:nowrap; pointer-events:none; }
-  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-  .toast.ok { border-color:var(--green); color:var(--green); }
-  .toast.error { border-color:var(--red); color:var(--red); }
-
-  .loading-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:400; align-items:center; justify-content:center; flex-direction:column; gap:14px; }
-  .loading-overlay.show { display:flex; }
-  .spinner { width:34px; height:34px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
-  @keyframes spin { to{transform:rotate(360deg)} }
-  .loading-text { font-family:var(--font-mono); font-size:11px; color:var(--muted); letter-spacing:1px; }
-  .empty-state { text-align:center; padding:40px 20px; color:var(--muted); font-family:var(--font-mono); font-size:11px; letter-spacing:1px; }
-  .empty-state-icon { font-size:28px; margin-bottom:10px; }
-</style>
-</head>
-<body>
-
-<div class="header">
-  <div class="logo">VLAC <span>PRODUCCIÓN</span></div>
-  <div class="header-right">
-    <button class="btn-sm" onclick="recargarMuebles()">↻ Sync</button>
-    <div class="header-clock" id="clock">--:--:--</div>
-  </div>
-</div>
-
-<div class="tabs">
-  <button class="tab active" onclick="showTab('operario',this)">Operario</button>
-  <button class="tab" onclick="showTab('kanban',this)">Panel</button>
-  <button class="tab" onclick="showTab('admin',this)">Admin</button>
-</div>
-
-<!-- OPERARIO -->
-<div class="view active" id="view-operario">
-  <div class="wrap">
-
-    <div id="paso-rol">
-      <div class="section-label">¿Con qué rol entrás?</div>
-      <div class="rol-grid" id="rolGrid"></div>
-    </div>
-
-    <div id="paso-muebles" style="display:none">
-      <button class="volver-btn" onclick="volverARol()">← Cambiar rol</button>
-      <div class="section-label" id="muebles-label">Muebles disponibles</div>
-      <div class="mueble-list" id="muebleList"></div>
-    </div>
-
-    <div id="paso-detalle" style="display:none">
-      <button class="volver-btn" onclick="volverAMuebles()">← Volver a la lista</button>
-
-      <div class="detalle-header">
-        <div class="detalle-top">
-          <div class="detalle-nombre" id="det-nombre">—</div>
-          <div class="detalle-fase" id="det-fase">—</div>
-        </div>
-        <div class="detalle-meta">
-          <div class="meta-item"><span class="meta-key">Obra</span><span class="meta-val" id="det-obra">—</span></div>
-          <div class="meta-item"><span class="meta-key">Prioridad</span><span class="meta-val" id="det-prioridad">—</span></div>
-          <div class="meta-item"><span class="meta-key">Laqueado</span><span class="meta-val" id="det-laqueado">—</span></div>
-        </div>
-      </div>
-
-      <div id="det-warning" class="warning-card" style="display:none">⚠️ <span id="det-warning-text"></span></div>
-
-      <div class="checklist-section" id="checklist-section">
-        <div class="checklist-header">
-          <div class="checklist-title">Verificación previa</div>
-          <div class="checklist-prog-text" id="check-prog-text">0 / 0</div>
-        </div>
-        <div class="prog-bar-wrap"><div class="prog-bar" id="check-prog-bar" style="width:0%"></div></div>
-        <div id="checklist-items"></div>
-      </div>
-
-      <div class="comentario-wrap">
-        <div class="comentario-label">Comentario / Advertencia para la siguiente fase</div>
-        <textarea class="comentario-input" id="comentario-input" placeholder="Ej: Panel B tiene marca en el canto, revisar antes de laquear..."></textarea>
-      </div>
-
-      <div class="timer-card" id="timer-card" style="display:none">
-        <div class="timer-display" id="timer-display">00:00:00</div>
-        <div class="timer-estado" id="timer-estado">LISTO</div>
-      </div>
-
-      <div class="acciones" id="acciones-pre">
-        <button class="btn btn-green" onclick="iniciarFase()">▶ Iniciar fase</button>
-      </div>
-      <div class="acciones" id="acciones-activo" style="display:none">
-        <button class="btn btn-yellow" id="btn-pausar" onclick="pausarReanudar()">⏸ Pausar</button>
-        <button class="btn btn-orange" onclick="finalizarFase()">✓ Finalizar fase</button>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- KANBAN -->
-<div class="view" id="view-kanban">
-  <div class="kanban-wrap"><div class="kanban-board" id="kanbanBoard"></div></div>
-</div>
-
-<!-- ADMIN -->
-<div class="view" id="view-admin">
-  <div class="admin-wrap">
-    <div class="section-label" style="margin-bottom:12px">Activo ahora</div>
-    <div class="admin-grid" id="adminGrid"><div class="empty-state"><div class="empty-state-icon">😴</div>Nadie trabajando</div></div>
-    <div style="font-family:var(--font-display);font-size:20px;letter-spacing:1px;margin-bottom:14px">Historial del día</div>
-    <div style="overflow-x:auto">
-      <table class="hist-table">
-        <thead><tr><th>Rol</th><th>Mueble</th><th>Fase</th><th>Duración</th><th>Problemas</th><th>Comentario</th></tr></thead>
-        <tbody id="historialBody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Sin registros hoy</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-<div class="loading-overlay" id="loading"><div class="spinner"></div><div class="loading-text" id="loading-text">CARGANDO...</div></div>
-
-<script>
-const MUEBLES_DB_ID = '3175a392e02d807f9967ed48823fe831';
-
-const ROLES = [
-  { id:'dt', nombre:'Dept. Técnico', icon:'📐', fases:['F0 – Carpeta Drive','F1 – Preparación DT','F2 – Replanteo','F3 – Planos Técnicos','F4 – Nesting'] },
-  { id:'cnc', nombre:'CNC', icon:'🔩', fases:['F5 – CNC'] },
-  { id:'carpinteria', nombre:'Carpintería', icon:'🔨', fases:['F6 – Mesa 1','F8 – Mesa 2'] },
-  { id:'cabina', nombre:'Cabina', icon:'🎨', fases:['F7 – Cabina'] },
-];
-
-const FASES = {
-  'F0 – Carpeta Drive': { color:'#6b7280', sig:(l)=>'F1 – Preparación DT', items:['Carpeta principal creada en Drive','Planos generales subidos','Renders del cliente subidos','Texto del presupuesto subido','Subcarpeta por mueble creada','Planos/renders por mueble asignados','Acceso compartido con DT'] },
-  'F1 – Preparación DT': { color:'#8b9cf4', sig:(l)=>'F2 – Replanteo', items:['Planos impresos','Carpeta física armada','Hoja de notas por mueble preparada','Cámara/teléfono con carga','Herramientas de medición listas','Fecha de visita a obra confirmada'] },
-  'F2 – Replanteo': { color:'#60a5fa', sig:(l)=>'F3 – Planos Técnicos', items:['Mediciones tomadas (cinta/laser)','Fotos subidas a Drive','Nota: columnas registrada','Nota: revoque registrada','Nota: piso (cota) registrada','Nota: apertura de puertas registrada','Nota: cañerías/electricidad registrada','Notas cargadas en Notion'] },
-  'F3 – Planos Técnicos': { color:'#3b82f6', sig:(l)=>'F4 – Nesting', items:['Plano dibujado a escala real','1er envío al cliente realizado','Respuesta cliente registrada','Plano APROBADO por cliente','Aprobación guardada en Drive','Plano final en Drive','Detalles de materiales al pie COMPLETO'] },
-  'F4 – Nesting': { color:'#1d4ed8', sig:(l)=>'F5 – CNC', items:['Archivo Nesting guardado en Drive','Planos de armado impresos','Lista de materiales generada','Stock verificado contra lista','Etiquetas impresas para todas las piezas','Carpeta de taller física armada','Listado herrajes enviado'] },
-  'F5 – CNC': { color:'#f97316', sig:(l)=>'F6 – Mesa 1', items:['Archivo Nesting cargado y verificado','Existencia de materiales verificada','Archivo ejecutado sin errores','Etiqueta pegada en CADA pieza','Filos pegados según indicación','Piezas limpiadas y perfeccionadas','Piezas agrupadas por mueble'] },
-  'F6 – Mesa 1': { color:'#eab308', sig:(l)=>l?'F7 – Cabina':'F8 – Mesa 2', items:['Documentación revisada','Todas las piezas presentes y etiquetadas','Barrales cortados a medida (si aplica)','Ajustes de corte según plano','Fresado de bordes según indicación','Pedidos especiales de DT ejecutados','Piezas listas para siguiente fase'] },
-  'F7 – Cabina': { color:'#a855f7', sig:(l)=>'F8 – Mesa 2', items:['Color/tipo de laca verificado en planos','Brillo/terminación verificado','Lijado parejo en todas las piezas','Fondo aplicado','Fondo lijado uniformemente','Terminación final aplicada','Secado completo','Sin defectos visuales'] },
-  'F8 – Mesa 2': { color:'#ca8a04', sig:(l)=>'F9 – Embalaje', items:['Piezas presentes sin daños','Armado final completo','Herrajes colocados (bisagras, correderas, tiradores)','Regulación de bisagras/correderas','Limpieza interior y exterior','Control de calidad visual','Aprobación interna'] },
-  'F9 – Embalaje': { color:'#22c55e', sig:(l)=>'✅ Listo para Envío', items:['Embalado con protección adecuada','Guarnición empaquetada y rotulada','Pintura para retoques incluida (si DT indica)','Accesorios adicionales incluidos','Lista de contenido completa y adjunta','Comparado con lista de envío total','Remito preparado','Foto del embalaje en Drive'] },
-};
-
-let S = { rol:null, mueble:null, tarea:null, checks:[], historial:[], muebles:[], activos:{} };
-let timerInt = null;
-
-function load() { try { const s=localStorage.getItem('vlac_v5'); if(s) S={...S,...JSON.parse(s)}; } catch(e){} }
-function save() { try { localStorage.setItem('vlac_v5', JSON.stringify(S)); } catch(e){} }
-
-async function api(method, endpoint, body) {
-  try {
-    const r = await fetch(`/notion${endpoint}`, { method, headers:{'Content-Type':'application/json'}, body:body?JSON.stringify(body):undefined });
-    if(!r.ok) { console.warn('API error', r.status, await r.text()); return null; }
-    return await r.json();
-  } catch(e) { console.warn('fetch error', e); return null; }
+HEADERS = {
+    "Authorization": f"Bearer {NOTION_TOKEN}",
+    "Notion-Version": "2022-06-28",
+    "Content-Type": "application/json",
 }
 
-async function loadMuebles() {
-  showLoad('Cargando muebles...');
-  let muebles=[], body={page_size:100};
-  while(true) {
-    const res = await api('POST', `/databases/${MUEBLES_DB_ID}/query`, body);
-    if(!res?.results) break;
-    for(const p of res.results) {
-      const pr = p.properties||{};
-      let nombre='';
-      for(const k of Object.keys(pr)) { if(pr[k].type==='title'){nombre=pr[k].title?.[0]?.plain_text||'';break;} }
-      if(!nombre||nombre.toLowerCase().includes('plantilla')) continue;
-      const obraRel = pr['Obra']?.relation?.[0];
-      let obraName='—';
-      if(obraRel) {
-        const op = await api('GET', `/pages/${obraRel.id}`);
-        if(op?.properties) for(const k of Object.keys(op.properties)){if(op.properties[k].type==='title'){obraName=op.properties[k].title?.[0]?.plain_text||'—';break;}}
-      }
-      muebles.push({ id:p.id, nombre, fase:pr['Fase Actual']?.select?.name||'', obra:obraName, prioridad:pr['Prioridad']?.select?.name||'Normal', laqueado:pr['Requiere Laqueado']?.checkbox||false, nota:pr['Último comentario']?.rich_text?.[0]?.plain_text||'' });
+# Mapa de fases: nombre exacto en Notion → (campo Finalizado, siguiente fase normal)
+FASES = [
+    ("F0 – Carpeta Drive",    "Finalizado F0", "F1 – Preparación DT"),
+    ("F1 – Preparación DT",   "Finalizado F1", "F2 – Replanteo"),
+    ("F2 – Replanteo",        "Finalizado F2", "F3 – Planos Técnicos"),
+    ("F3 – Planos Técnicos",  "Finalizado F3", "F4 – Nesting"),
+    ("F4 – Nesting",          "Finalizado F4", "F5 – CNC"),
+    ("F5 – CNC",              "Finalizado F5", "F6 – Mesa 1"),
+    ("F6 – Mesa 1",           "Finalizado F6", None),  # especial: depende de Laqueado
+    ("F7 – Cabina",           "Finalizado F7", "F8 – Mesa 2"),
+    ("F8 – Mesa 2",           "Finalizado F8", "F9 – Embalaje"),
+    ("F9 – Embalaje",         "Finalizado F9", "✅ Listo para Envío"),
+]
+
+# Índice rápido por nombre de fase
+FASE_MAP = {f[0]: f for f in FASES}
+
+
+def notion_request(method, path, body=None):
+    url = f"https://api.notion.com/v1/{path}"
+    data = json.dumps(body).encode() if body else None
+    req = urllib.request.Request(url, data=data, headers=HEADERS, method=method)
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode()
+        print(f"  ⚠️  Error HTTP {e.code}: {error_body}")
+        return None
+
+
+def get_all_muebles():
+    """Trae todos los muebles de la base de datos."""
+    muebles = []
+    body = {"page_size": 100}
+    while True:
+        result = notion_request("POST", f"databases/{DATABASE_ID}/query", body)
+        if not result:
+            break
+        muebles.extend(result.get("results", []))
+        if result.get("has_more"):
+            body["start_cursor"] = result["next_cursor"]
+        else:
+            break
+    return muebles
+
+
+def get_prop(props, nombre, tipo):
+    """Extrae el valor de una propiedad según su tipo."""
+    prop = props.get(nombre)
+    if not prop:
+        return None
+    if tipo == "select":
+        sel = prop.get("select")
+        return sel["name"] if sel else None
+    if tipo == "date":
+        d = prop.get("date")
+        return d["start"] if d else None
+    if tipo == "checkbox":
+        return prop.get("checkbox", False)
+    if tipo == "title":
+        tt = prop.get("title", [])
+        return tt[0]["plain_text"] if tt else "(sin nombre)"
+    return None
+
+
+def update_fase(page_id, nueva_fase, fecha_recibido):
+    """Actualiza Fase Actual y registra fecha Recibido de la nueva fase."""
+    # Determinar campo Recibido de la nueva fase
+    campo_recibido = None
+    for fase_nombre, campo_fin, _ in FASES:
+        if fase_nombre == nueva_fase:
+            # el campo recibido sigue el mismo patrón: "Recibido F(n)"
+            numero = campo_fin.replace("Finalizado ", "")  # ej: "F7"
+            campo_recibido = f"Recibido {numero}"
+            break
+
+    props_update = {
+        "Fase Actual": {
+            "select": {"name": nueva_fase}
+        }
     }
-    if(res.has_more) body.start_cursor=res.next_cursor; else break;
-  }
-  S.muebles=muebles; save(); hideLoad();
-}
 
-async function recargarMuebles() { await loadMuebles(); renderMuebleList(); renderKanban(); toast('✓ Sincronizado','ok'); }
+    if campo_recibido:
+        props_update[campo_recibido] = {
+            "date": {"start": fecha_recibido}
+        }
 
-async function notionAvanzar(id, fase, sig, fechaFin, comentario, problemas) {
-  const num = fase.split('–')[0].trim();
-  const nxt = {'F0':'F1','F1':'F2','F2':'F3','F3':'F4','F4':'F5','F5':'F6','F6':'F7','F7':'F8','F8':'F9'}[num];
-  const ahora = new Date().toISOString();
-  const props = { 'Fase Actual':{select:{name:sig}}, [`Finalizado ${num}`]:{date:{start:fechaFin}} };
-  if(nxt && sig!=='✅ Listo para Envío') props[`Recibido ${nxt}`]={date:{start:ahora}};
-  let nota = '';
-  if(problemas.length) nota = 'PROBLEMAS: '+problemas.join(' | ')+(comentario?'\n'+comentario:'');
-  else if(comentario) nota = comentario;
-  if(nota) props['Último comentario']={rich_text:[{text:{content:nota}}]};
-  const r = await api('PATCH', `/pages/${id}`, {properties:props});
-  return r!==null;
-}
+    body = {"properties": props_update}
+    result = notion_request("PATCH", f"pages/{page_id}", body)
+    return result is not None
 
-async function notionInicio(id, fase) {
-  const num = fase.split('–')[0].trim();
-  await api('PATCH', `/pages/${id}`, {properties:{[`Iniciado ${num}`]:{date:{start:new Date().toISOString()}}}});
-}
 
-// ROLES
-function renderRoles() {
-  document.getElementById('rolGrid').innerHTML = ROLES.map(r=>`
-    <button class="rol-btn ${S.rol?.id===r.id?'active':''}" onclick="selectRol('${r.id}')">
-      <div class="rol-btn-icon">${r.icon}</div>
-      <div class="rol-btn-name">${r.nombre}</div>
-      <div class="rol-btn-fases">${r.fases.map(f=>f.split('–')[0].trim()).join(' · ')}</div>
-    </button>`).join('');
-}
+def procesar_muebles(muebles):
+    avances = 0
+    sin_cambios = 0
 
-function selectRol(id) { S.rol=ROLES.find(r=>r.id===id); save(); renderRoles(); mostrarMuebles(); }
-function volverARol() { S.rol=null; S.mueble=null; save(); show('paso-rol'); hide('paso-muebles'); hide('paso-detalle'); renderRoles(); }
+    for mueble in muebles:
+        props = mueble.get("properties", {})
+        page_id = mueble["id"]
+        nombre = get_prop(props, "Nombre Mueble", "title")
+        fase_actual = get_prop(props, "Fase Actual", "select")
 
-// MUEBLES
-function mostrarMuebles() { hide('paso-rol'); show('paso-muebles'); hide('paso-detalle'); renderMuebleList(); }
-function renderMuebleList() {
-  if(!S.rol) return;
-  const lista = S.muebles.filter(m=>S.rol.fases.includes(m.fase));
-  document.getElementById('muebles-label').textContent = `${S.rol.nombre} · ${lista.length} mueble${lista.length!==1?'s':''} disponible${lista.length!==1?'s':''}`;
-  const el = document.getElementById('muebleList');
-  if(!lista.length) { el.innerHTML='<div class="empty-state"><div class="empty-state-icon">✅</div>Sin muebles pendientes</div>'; return; }
-  el.innerHTML = lista.map(m=>`
-    <div class="mueble-item ${m.nota?'has-warning':''}" onclick="abrirMueble('${m.id}')">
-      <div class="mueble-item-left">
-        <div class="mueble-item-nombre">${m.nombre}</div>
-        <div class="mueble-item-meta">${m.obra} · ${m.prioridad}</div>
-        ${m.nota?`<div class="warning-preview">⚠ ${m.nota}</div>`:''}
-      </div>
-      <div class="mueble-item-fase">${m.fase.split('–')[0].trim()}</div>
-    </div>`).join('');
-}
-function volverAMuebles() { S.mueble=null; S.tarea=null; S.checks=[]; stopTimer(); save(); mostrarMuebles(); }
+        if not fase_actual:
+            sin_cambios += 1
+            continue
 
-// DETALLE
-function abrirMueble(id) {
-  const m=S.muebles.find(x=>x.id===id); if(!m) return;
-  S.mueble=m; S.tarea=null; S.checks=[]; save();
-  hide('paso-muebles'); show('paso-detalle');
-  document.getElementById('det-nombre').textContent=m.nombre;
-  document.getElementById('det-fase').textContent=m.fase;
-  document.getElementById('det-obra').textContent=m.obra;
-  document.getElementById('det-prioridad').textContent=m.prioridad;
-  document.getElementById('det-laqueado').textContent=m.laqueado?'✅ Sí':'—';
-  document.getElementById('comentario-input').value='';
-  const ww=document.getElementById('det-warning');
-  if(m.nota){ww.style.display='flex';document.getElementById('det-warning-text').textContent=m.nota;}
-  else ww.style.display='none';
-  const cfg=FASES[m.fase];
-  if(cfg?.items){S.checks=cfg.items.map(()=>null);renderChecks(cfg.items);document.getElementById('checklist-section').style.display='block';}
-  else document.getElementById('checklist-section').style.display='none';
-  document.getElementById('timer-card').style.display='none';
-  show('acciones-pre'); hide('acciones-activo');
-  document.getElementById('acciones-pre').style.display='flex';
-  document.getElementById('acciones-activo').style.display='none';
-}
+        # Buscar si la fase actual tiene Finalizado cargado
+        fase_info = FASE_MAP.get(fase_actual)
+        if not fase_info:
+            # Fase no reconocida o ya es "Listo para Envío"
+            sin_cambios += 1
+            continue
 
-function renderChecks(items) {
-  document.getElementById('checklist-items').innerHTML = items.map((item,i)=>{
-    const v=S.checks[i];
-    return `<div class="checklist-row">
-      <div class="check-text ${v==='ok'?'ok-state':v==='noapl'?'noapl-state':v==='prob'?'prob-state':''}">${item}</div>
-      <div class="check-btns">
-        <button class="check-btn ${v==='ok'?'sel-ok':''}" onclick="setCheck(${i},'ok')" title="OK">✓</button>
-        <button class="check-btn ${v==='noapl'?'sel-noapl':''}" onclick="setCheck(${i},'noapl')" title="No aplica">—</button>
-        <button class="check-btn ${v==='prob'?'sel-prob':''}" onclick="setCheck(${i},'prob')" title="Problema">⚠</button>
-      </div>
-    </div>`;
-  }).join('');
-  const done=S.checks.filter(x=>x!==null).length;
-  const total=items.length;
-  document.getElementById('check-prog-bar').style.width=(total>0?done/total*100:0)+'%';
-  document.getElementById('check-prog-text').textContent=`${done} / ${total}`;
-}
+        fase_nombre, campo_finalizado, siguiente_normal = fase_info
+        fecha_finalizado = get_prop(props, campo_finalizado, "date")
 
-function setCheck(i,v) {
-  S.checks[i]=S.checks[i]===v?null:v;
-  const cfg=FASES[S.mueble?.fase];
-  if(cfg?.items) renderChecks(cfg.items);
-  save();
-}
+        if not fecha_finalizado:
+            # Todavía no finalizó esta fase
+            sin_cambios += 1
+            continue
 
-async function iniciarFase() {
-  const m=S.mueble; if(!m) return;
-  const cfg=FASES[m.fase];
-  if(cfg?.items){const inc=S.checks.filter(x=>x===null).length;if(inc>0){toast(`Completá los ${inc} ítem${inc!==1?'s':''} primero`,'error');return;}}
-  showLoad('Iniciando...');
-  await notionInicio(m.id, m.fase);
-  hideLoad();
-  const ahora=new Date().toISOString();
-  S.tarea={inicio:ahora,pausaInicio:null,tiempoAcumulado:0,estado:'activo'};
-  S.activos[S.rol.id]={muebleNombre:m.nombre,fase:m.fase,inicio:ahora,estado:'activo'};
-  save();
-  document.getElementById('timer-card').style.display='block';
-  document.getElementById('acciones-pre').style.display='none';
-  document.getElementById('acciones-activo').style.display='flex';
-  document.getElementById('timer-display').className='timer-display running';
-  document.getElementById('timer-estado').textContent='EN CURSO';
-  startTimer();
-  toast(`▶ Iniciado: ${m.nombre}`,'ok');
-}
+        # Determinar la siguiente fase
+        if fase_nombre == "F6 – Mesa 1":
+            requiere_laqueado = get_prop(props, "Requiere Laqueado", "checkbox")
+            siguiente_fase = "F7 – Cabina" if requiere_laqueado else "F8 – Mesa 2"
+        else:
+            siguiente_fase = siguiente_normal
 
-function pausarReanudar() {
-  const t=S.tarea; if(!t) return;
-  const ahora=new Date().toISOString();
-  const btn=document.getElementById('btn-pausar');
-  if(t.estado==='activo'){
-    t.pausaInicio=ahora; t.estado='pausado';
-    btn.textContent='▶ Reanudar';
-    document.getElementById('timer-display').className='timer-display paused';
-    document.getElementById('timer-estado').textContent='PAUSADO';
-    if(S.activos[S.rol?.id]) S.activos[S.rol.id].estado='pausado';
-    toast('⏸ Pausado','ok');
-  } else {
-    t.tiempoAcumulado+=new Date(ahora)-new Date(t.pausaInicio);
-    t.pausaInicio=null; t.estado='activo';
-    btn.textContent='⏸ Pausar';
-    document.getElementById('timer-display').className='timer-display running';
-    document.getElementById('timer-estado').textContent='EN CURSO';
-    if(S.activos[S.rol?.id]) S.activos[S.rol.id].estado='activo';
-    toast('▶ Reanudado','ok');
-  }
-  save();
-}
+        if not siguiente_fase:
+            sin_cambios += 1
+            continue
 
-async function finalizarFase() {
-  const m=S.mueble, t=S.tarea; if(!m||!t) return;
-  const cfg=FASES[m.fase];
-  const sig=cfg?cfg.sig(m.laqueado):'✅ Listo para Envío';
-  const comentario=document.getElementById('comentario-input').value;
-  const ahora=new Date().toISOString();
-  const problemas=cfg?.items?cfg.items.filter((_,i)=>S.checks[i]==='prob'):[];
-  showLoad('Finalizando...');
-  const ok=await notionAvanzar(m.id,m.fase,sig,ahora,comentario,problemas);
-  hideLoad();
-  if(!ok){toast('Error al actualizar Notion','error');return;}
-  const durMs=Math.max(0,(new Date(ahora)-new Date(t.inicio))-t.tiempoAcumulado);
-  S.historial.push({rol:S.rol?.nombre,mueble:m.nombre,fase:m.fase,fin:ahora,horas:(durMs/3600000).toFixed(2),problemas:problemas.join(', '),comentario:comentario||''});
-  const idx=S.muebles.findIndex(x=>x.id===m.id);
-  if(idx>=0){S.muebles[idx].fase=sig;S.muebles[idx].nota=problemas.length?'PROBLEMAS: '+problemas.join(' | ')+(comentario?'\n'+comentario:''):(comentario||'');}
-  if(S.activos) delete S.activos[S.rol?.id];
-  S.mueble=null; S.tarea=null; S.checks=[]; stopTimer(); save();
-  renderKanban();
-  toast(`✓ ${m.nombre} → ${sig}`,'ok');
-  mostrarMuebles();
-}
+        # Verificar que no haya avanzado ya
+        if fase_actual == siguiente_fase:
+            sin_cambios += 1
+            continue
 
-// TIMER
-function calcT(t){if(!t)return 0;const n=Date.now();let e=n-new Date(t.inicio)-( t.tiempoAcumulado||0);if(t.pausaInicio)e-=(n-new Date(t.pausaInicio));return Math.max(0,e);}
-function fmtT(ms){const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;}
-function startTimer(){stopTimer();timerInt=setInterval(()=>{const d=document.getElementById('timer-display');if(d&&S.tarea)d.textContent=fmtT(calcT(S.tarea));},1000);}
-function stopTimer(){if(timerInt){clearInterval(timerInt);timerInt=null;}}
+        # Fecha de recibido de la nueva fase = ahora
+        ahora = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
-// KANBAN
-function renderKanban(){
-  const fases=[...Object.keys(FASES),'✅ Listo para Envío'];
-  document.getElementById('kanbanBoard').innerHTML=fases.map(f=>{
-    const ms=S.muebles.filter(m=>m.fase===f);
-    const color=FASES[f]?.color||'#22c55e';
-    return `<div class="kanban-col"><div class="kanban-col-header" style="border-top:3px solid ${color}"><div class="kanban-col-title">${f}</div><div class="kanban-col-count">${ms.length}</div></div><div class="kanban-cards">${ms.length?ms.map(m=>`<div class="kanban-card ${m.nota?'has-warning':''}">${m.nombre}<div class="kanban-card-obra">${m.obra}</div></div>`).join(''):'<div style="font-size:10px;color:var(--muted);text-align:center;padding:6px">—</div>'}</div></div>`;
-  }).join('');
-}
+        print(f"  🔄 {nombre}")
+        print(f"     {fase_actual}  →  {siguiente_fase}")
 
-// ADMIN
-function renderAdmin(){
-  const activos=Object.entries(S.activos||{}).filter(([,t])=>t);
-  const grid=document.getElementById('adminGrid');
-  grid.innerHTML=activos.length?activos.map(([rol,t])=>{const p=t.estado==='pausado';return `<div class="admin-card"><div class="admin-card-op"><span class="status-dot ${p?'paused':''}"></span>${rol}</div><div class="admin-card-mueble">${t.muebleNombre}</div><div class="admin-card-fase">${t.fase}</div><div class="admin-card-timer ${p?'paused':''}">${fmtT(calcT(t))}</div></div>`;}).join(''):'<div class="empty-state"><div class="empty-state-icon">😴</div>Nadie trabajando</div>';
-  const hoy=new Date().toDateString();
-  const regs=(S.historial||[]).filter(r=>new Date(r.fin).toDateString()===hoy);
-  document.getElementById('historialBody').innerHTML=regs.length?regs.slice().reverse().map(r=>`<tr><td>${r.rol}</td><td>${r.mueble}</td><td>${r.fase}</td><td>${r.horas}h</td><td style="color:var(--red)">${r.problemas||'—'}</td><td style="color:var(--yellow)">${r.comentario||'—'}</td></tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Sin registros hoy</td></tr>';
-}
+        ok = update_fase(page_id, siguiente_fase, ahora)
+        if ok:
+            print(f"     ✅ Actualizado correctamente")
+            avances += 1
+        else:
+            print(f"     ❌ Error al actualizar")
 
-// UI HELPERS
-function show(id){const e=document.getElementById(id);if(e)e.style.display='block';}
-function hide(id){const e=document.getElementById(id);if(e)e.style.display='none';}
-function showTab(name,btn){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById(`view-${name}`).classList.add('active');btn.classList.add('active');if(name==='admin')renderAdmin();if(name==='kanban')renderKanban();}
-function showLoad(t){document.getElementById('loading-text').textContent=t||'CARGANDO...';document.getElementById('loading').classList.add('show');}
-function hideLoad(){document.getElementById('loading').classList.remove('show');}
-function toast(msg,tipo='ok'){const e=document.getElementById('toast');e.textContent=msg;e.className=`toast ${tipo} show`;setTimeout(()=>e.classList.remove('show'),3000);}
-function updateClock(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+    return avances, sin_cambios
 
-async function init(){
-  load();
-  S.rol=null; S.mueble=null; S.tarea=null; S.checks=[]; S.activos={}; save();
-  renderRoles();
-  setInterval(updateClock,1000); updateClock();
-  await loadMuebles();
-  renderKanban();
-  setInterval(renderAdmin,30000);
-}
-init();
-</script>
-</body>
-</html>
+
+def main():
+    print("=" * 50)
+    print("  VLAC — Avance automático de fases")
+    print(f"  {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    print("=" * 50)
+
+    if NOTION_TOKEN == "PEGAR_TOKEN_AQUI":
+        print("\n❌ ERROR: Completá el NOTION_TOKEN en el archivo antes de correr el script.")
+        return
+
+    print("\n📋 Consultando muebles en Notion...")
+    muebles = get_all_muebles()
+    print(f"   {len(muebles)} muebles encontrados\n")
+
+    if not muebles:
+        print("No se encontraron muebles. Verificá el DATABASE_ID y los permisos de la integración.")
+        return
+
+    print("🔍 Procesando fases...\n")
+    avances, sin_cambios = procesar_muebles(muebles)
+
+    print("\n" + "=" * 50)
+    print(f"  ✅ Muebles avanzados:     {avances}")
+    print(f"  ⏸️  Sin cambios:           {sin_cambios}")
+    print("=" * 50)
+
+    if avances == 0:
+        print("\n💡 Tip: Para que un mueble avance, el campo")
+        print("   'Finalizado F(n)' debe tener una fecha cargada en Notion.")
+
+
+if __name__ == "__main__":
+    main()
+
