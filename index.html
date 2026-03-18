@@ -465,6 +465,14 @@ async function notionInicio(muebleId,fase,operario){
   }});
 }
 
+// Guardar checklist en Notion
+async function notionGuardarChecklist(muebleId, fase, checks){
+  const num=FASE_NUM[fase];if(!num)return;
+  const props={};
+  props['Checklist '+num]={rich_text:[{text:{content:JSON.stringify(checks)}}]};
+  await api('PATCH','/pages/'+muebleId,{properties:props});
+}
+
 // ROLES
 function renderRoles(){
   document.getElementById('rolGrid').innerHTML=ROLES.map(r=>`
@@ -546,7 +554,10 @@ function abrirMueble(id){
   const checkSec=document.getElementById('checklist-section');
   if(items.length){
     checkSec.style.display='block';
-    S.checks=tareaExistente?.checks||items.map(()=>null);
+    // Usar checklist de Notion si existe, sino tarea local o vacío
+    const numFase=FASE_NUM[m.fase];
+    const checkNotion=m.checklistNotion?.[numFase]||null;
+    S.checks=checkNotion||(tareaExistente?.checks)||items.map(()=>null);
     renderChecks(items);
   }else{checkSec.style.display='none';S.checks=[];}
 
@@ -604,6 +615,8 @@ function setCheck(i,v){
   S.checks[i]=S.checks[i]===v?null:v;
   const t=getTareaActiva();if(t)t.checks=[...S.checks];
   renderChecks(CHECKLIST[S.mueble?.fase]||[]);save();
+  // Guardar en Notion en background
+  if(S.mueble)notionGuardarChecklist(S.mueble.id,S.mueble.fase,[...S.checks]);
 }
 
 function getTareaActiva(){
@@ -815,6 +828,35 @@ async function init(){
   await loadMuebles();
   renderKanban();
   setInterval(renderAdmin,30000);
+  // Auto-refresh checklist cada 30s si hay mueble abierto
+  setInterval(async()=>{
+    if(S.mueble){
+      const idx=S.muebles.findIndex(x=>x.id===S.mueble.id);
+      if(idx>=0){
+        const res=await api('GET','/pages/'+S.mueble.id);
+        if(res?.properties){
+          const pr=res.properties;
+          const num=FASE_NUM[S.mueble.fase];
+          if(num){
+            const raw=pr['Checklist '+num]?.rich_text?.[0]?.plain_text||'';
+            if(raw){
+              try{
+                const fromNotion=JSON.parse(raw);
+                // Solo actualizar si no estamos en medio de edición (comparar con estado actual)
+                const distinto=fromNotion.some((v,i)=>v!==S.checks[i]);
+                if(distinto){
+                  S.checks=fromNotion;
+                  const t=getTareaActiva();if(t)t.checks=[...S.checks];
+                  renderChecks(CHECKLIST[S.mueble.fase]||[]);
+                  save();
+                }
+              }catch(e){}
+            }
+          }
+        }
+      }
+    }
+  },30000);
 }
 init();
 </script>
