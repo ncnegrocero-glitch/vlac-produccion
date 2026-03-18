@@ -1,11 +1,17 @@
 const https = require('https');
 
 exports.handler = async (event) => {
-  const path = event.path.replace('/.netlify/functions/notion', '') || '/';
+  console.log('Event path:', event.path);
+  console.log('Event rawPath:', event.rawPath);
+  
+  let path = event.path || event.rawPath || '';
+  path = path.replace('/notion', '');
+  if (!path.startsWith('/')) path = '/' + path;
+  
   const query = event.rawQuery ? '?' + event.rawQuery : '';
   const url = `https://api.notion.com/v1${path}${query}`;
   
-  console.log('Proxying:', event.httpMethod, url);
+  console.log('Final URL:', url);
   
   return new Promise((resolve) => {
     const options = {
