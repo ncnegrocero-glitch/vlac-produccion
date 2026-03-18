@@ -339,11 +339,11 @@ async function notionAvanzar(id, fase, sig, fechaFin, comentario, problemas) {
   else if(comentario) nota = comentario;
   if(nota) props['Último comentario']={rich_text:[{text:{content:nota}}]};
   const r = await api('PATCH', `/pages/${id}`, {properties:props});
-  return r!==null;
+console.log('PATCH response:', JSON.stringify(r)); return r!==null;
 }
 
 async function notionInicio(id, fase) {
-  const num = fase.split('–')[0].trim();
+const num = fase.split('–')[0].trim();
   await api('PATCH', `/pages/${id}`, {properties:{[`Iniciado ${num}`]:{date:{start:new Date().toISOString()}}}});
 }
 
