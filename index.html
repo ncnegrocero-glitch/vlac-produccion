@@ -1,224 +1,62 @@
-#!/usr/bin/env python3
-"""
-VLAC Producción — Avance automático de fases
-=============================================
-Lógica:
-  - Si un mueble tiene "Finalizado F(n)" con fecha cargada
-    Y su Fase Actual es "F(n) – ..." 
-    → avanza automáticamente a la siguiente fase
-  
-  Regla especial F6 (Mesa 1):
-    - Si Requiere Laqueado = True  → siguiente fase es F7 – Cabina
-    - Si Requiere Laqueado = False → siguiente fase es F8 – Mesa 2
-
-Uso:
-  1. Completar NOTION_TOKEN y DATABASE_ID abajo
-  2. Correr en terminal: python3 avance_fases.py
-"""
-
-import urllib.request
-import urllib.error
-import json
-from datetime import datetime
-
-# ─────────────────────────────────────────
-# CONFIGURACIÓN — completar antes de correr
-# ─────────────────────────────────────────
-NOTION_TOKEN  = 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   # secret_... o ntn_...
-DATABASE_ID   = "3175a392e02d807f9967ed48823fe831"
-# ─────────────────────────────────────────
-
-HEADERS = {
-    "Authorization": f"Bearer {NOTION_TOKEN}",
-    "Notion-Version": "2022-06-28",
-    "Content-Type": "application/json",
-}
-
-# Mapa de fases: nombre exacto en Notion → (campo Finalizado, siguiente fase normal)
-FASES = [
-    ("F0 – Carpeta Drive",    "Finalizado F0", "F1 – Preparación DT"),
-    ("F1 – Preparación DT",   "Finalizado F1", "F2 – Replanteo"),
-    ("F2 – Replanteo",        "Finalizado F2", "F3 – Planos Técnicos"),
-    ("F3 – Planos Técnicos",  "Finalizado F3", "F4 – Nesting"),
-    ("F4 – Nesting",          "Finalizado F4", "F5 – CNC"),
-    ("F5 – CNC",              "Finalizado F5", "F6 – Mesa 1"),
-    ("F6 – Mesa 1",           "Finalizado F6", None),  # especial: depende de Laqueado
-    ("F7 – Cabina",           "Finalizado F7", "F8 – Mesa 2"),
-    ("F8 – Mesa 2",           "Finalizado F8", "F9 – Embalaje"),
-    ("F9 – Embalaje",         "Finalizado F9", "✅ Listo para Envío"),
-]
-
-# Índice rápido por nombre de fase
-FASE_MAP = {f[0]: f for f in FASES}
-
-
-def notion_request(method, path, body=None):
-    url = f"https://api.notion.com/v1/{path}"
-    data = json.dumps(body).encode() if body else None
-    req = urllib.request.Request(url, data=data, headers=HEADERS, method=method)
-    try:
-        with urllib.request.urlopen(req) as resp:
-            return json.loads(resp.read())
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode()
-        print(f"  ⚠️  Error HTTP {e.code}: {error_body}")
-        return None
-
-
-def get_all_muebles():
-    """Trae todos los muebles de la base de datos."""
-    muebles = []
-    body = {"page_size": 100}
-    while True:
-        result = notion_request("POST", f"databases/{DATABASE_ID}/query", body)
-        if not result:
-            break
-        muebles.extend(result.get("results", []))
-        if result.get("has_more"):
-            body["start_cursor"] = result["next_cursor"]
-        else:
-            break
-    return muebles
-
-
-def get_prop(props, nombre, tipo):
-    """Extrae el valor de una propiedad según su tipo."""
-    prop = props.get(nombre)
-    if not prop:
-        return None
-    if tipo == "select":
-        sel = prop.get("select")
-        return sel["name"] if sel else None
-    if tipo == "date":
-        d = prop.get("date")
-        return d["start"] if d else None
-    if tipo == "checkbox":
-        return prop.get("checkbox", False)
-    if tipo == "title":
-        tt = prop.get("title", [])
-        return tt[0]["plain_text"] if tt else "(sin nombre)"
-    return None
-
-
-def update_fase(page_id, nueva_fase, fecha_recibido):
-    """Actualiza Fase Actual y registra fecha Recibido de la nueva fase."""
-    # Determinar campo Recibido de la nueva fase
-    campo_recibido = None
-    for fase_nombre, campo_fin, _ in FASES:
-        if fase_nombre == nueva_fase:
-            # el campo recibido sigue el mismo patrón: "Recibido F(n)"
-            numero = campo_fin.replace("Finalizado ", "")  # ej: "F7"
-            campo_recibido = f"Recibido {numero}"
-            break
-
-    props_update = {
-        "Fase Actual": {
-            "select": {"name": nueva_fase}
-        }
-    }
-
-    if campo_recibido:
-        props_update[campo_recibido] = {
-            "date": {"start": fecha_recibido}
-        }
-
-    body = {"properties": props_update}
-    result = notion_request("PATCH", f"pages/{page_id}", body)
-    return result is not None
-
-
-def procesar_muebles(muebles):
-    avances = 0
-    sin_cambios = 0
-
-    for mueble in muebles:
-        props = mueble.get("properties", {})
-        page_id = mueble["id"]
-        nombre = get_prop(props, "Nombre Mueble", "title")
-        fase_actual = get_prop(props, "Fase Actual", "select")
-
-        if not fase_actual:
-            sin_cambios += 1
-            continue
-
-        # Buscar si la fase actual tiene Finalizado cargado
-        fase_info = FASE_MAP.get(fase_actual)
-        if not fase_info:
-            # Fase no reconocida o ya es "Listo para Envío"
-            sin_cambios += 1
-            continue
-
-        fase_nombre, campo_finalizado, siguiente_normal = fase_info
-        fecha_finalizado = get_prop(props, campo_finalizado, "date")
-
-        if not fecha_finalizado:
-            # Todavía no finalizó esta fase
-            sin_cambios += 1
-            continue
-
-        # Determinar la siguiente fase
-        if fase_nombre == "F6 – Mesa 1":
-            requiere_laqueado = get_prop(props, "Requiere Laqueado", "checkbox")
-            siguiente_fase = "F7 – Cabina" if requiere_laqueado else "F8 – Mesa 2"
-        else:
-            siguiente_fase = siguiente_normal
-
-        if not siguiente_fase:
-            sin_cambios += 1
-            continue
-
-        # Verificar que no haya avanzado ya
-        if fase_actual == siguiente_fase:
-            sin_cambios += 1
-            continue
-
-        # Fecha de recibido de la nueva fase = ahora
-        ahora = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-
-        print(f"  🔄 {nombre}")
-        print(f"     {fase_actual}  →  {siguiente_fase}")
-
-        ok = update_fase(page_id, siguiente_fase, ahora)
-        if ok:
-            print(f"     ✅ Actualizado correctamente")
-            avances += 1
-        else:
-            print(f"     ❌ Error al actualizar")
-
-    return avances, sin_cambios
-
-
-def main():
-    print("=" * 50)
-    print("  VLAC — Avance automático de fases")
-    print(f"  {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
-    print("=" * 50)
-
-    if NOTION_TOKEN == "PEGAR_TOKEN_AQUI":
-        print("\n❌ ERROR: Completá el NOTION_TOKEN en el archivo antes de correr el script.")
-        return
-
-    print("\n📋 Consultando muebles en Notion...")
-    muebles = get_all_muebles()
-    print(f"   {len(muebles)} muebles encontrados\n")
-
-    if not muebles:
-        print("No se encontraron muebles. Verificá el DATABASE_ID y los permisos de la integración.")
-        return
-
-    print("🔍 Procesando fases...\n")
-    avances, sin_cambios = procesar_muebles(muebles)
-
-    print("\n" + "=" * 50)
-    print(f"  ✅ Muebles avanzados:     {avances}")
-    print(f"  ⏸️  Sin cambios:           {sin_cambios}")
-    print("=" * 50)
-
-    if avances == 0:
-        print("\n💡 Tip: Para que un mueble avance, el campo")
-        print("   'Finalizado F(n)' debe tener una fecha cargada en Notion.")
-
-
-if __name__ == "__main__":
-    main()
-
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.7">
+  <style type="text/css">
+    body {background-color: #0a0a0a}
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px 'Helvetica Neue'; color: #8f8f8f; -webkit-text-stroke: #8f8f8f}
+    p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 24.0px 'Helvetica Neue'; color: #f1961c; -webkit-text-stroke: #f1961c; min-height: 28.0px}
+    p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; text-align: center; font: 10.0px 'Helvetica Neue'; color: #3f3f3f; -webkit-text-stroke: #3f3f3f}
+    p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 11.0px 'Helvetica Neue'; color: #3f3f3f; -webkit-text-stroke: #3f3f3f}
+    p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; text-align: center; font: 10.0px 'Helvetica Neue'; color: #f1961c; -webkit-text-stroke: #f1961c}
+    p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px 'Helvetica Neue'; color: #3f3f3f; -webkit-text-stroke: #3f3f3f}
+    p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px 'Helvetica Neue'; color: #ececec; -webkit-text-stroke: #ececec; background-color: #171717; min-height: 15.0px}
+    span.s1 {font: 24.0px 'Helvetica Neue'; font-kerning: none; color: #f1961c; background-color: #101010; -webkit-text-stroke: 0px #f1961c}
+    span.s2 {font-kerning: none; background-color: #101010}
+    span.s3 {font-kerning: none}
+    table.t1 {border-collapse: collapse}
+    td.td1 {border-style: solid; border-width: 1.0px 1.0px 1.0px 1.0px; border-color: #bfbfbf #bfbfbf #bfbfbf #bfbfbf; padding: 0.0px 5.0px 0.0px 5.0px}
+  </style>
+</head>
+<body>
+<p class="p1"><br></p>
+<table cellspacing="0" cellpadding="0" class="t1">
+  <tbody>
+    <tr>
+      <td valign="middle" class="td1">
+        <p class="p2"><span class="s1">VLAC </span><span class="s2">PRODUCCIÓN</span></p>
+      </td>
+      <td valign="middle" class="td1">
+        <p class="p3"><span class="s3"></span><br></p>
+      </td>
+      <td valign="middle" class="td1">
+        <p class="p3"><span class="s3"></span><br></p>
+      </td>
+    </tr>
+    <tr>
+      <td valign="middle" class="td1">
+        <p class="p3"><span class="s3"></span><br></p>
+      </td>
+      <td valign="middle" class="td1">
+        <p class="p3"><span class="s3"></span><br></p>
+      </td>
+      <td valign="middle" class="td1">
+        <p class="p3"><span class="s3"></span><br></p>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p class="p4"><span class="s2">↻ Sync</span></p>
+<p class="p5"><span class="s2">--:--:--</span></p>
+<p class="p6"><span class="s2">OPERARIO</span></p>
+<p class="p4"><span class="s2">PANEL</span></p>
+<p class="p4"><span class="s2">ADMIN</span></p>
+<p class="p7"><span class="s3">¿CON QUÉ ROL ENTRÁS?</span></p>
+<p class="p8"><span class="s3"></span><br></p>
+</body>
+</html>
